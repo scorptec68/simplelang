@@ -12,6 +12,7 @@ Example:
 	   y: integer
 	   i: integer
 	   doit: boolean
+	   'this boy': boolean
 	endvar
 	
 	run
@@ -20,6 +21,7 @@ Example:
 		    
 		y = x + 3
 		print("y =  " + str(x))
+		
 		if y > 3
 			test = "super"
 		elseif y < 3 
@@ -27,6 +29,7 @@ Example:
 		else
 		    test = "duper"
 		endif
+		
 		print(test)
 		test = test - "r"
 		print(test)
@@ -34,6 +37,7 @@ Example:
 		loop 10
 		    i = i + 1
 		endloop
+		
 		print("i = " + str(i))
 	endrun
 	
@@ -53,12 +57,12 @@ EBNF
 	
 	<assignment> ::= <identifier> = <expression>
 	
-	<expression> ::= ( <expression> ) | <int-expression> | <bool-expression> | <string-expression>
+	<expression> ::= ( <expression> ) | <int-expression> | <bool-expression> | <string-expression> | <identifier>
 	
 	<int-expression> ::= <integer> 
 	     | <int-expression> <binary-int-operator> <int-expression>
 	
-	<string-expression> ::= <string> 
+	<string-expression> ::= <string-literal> 
 	     | <str-expression> <binary-str-operator> <str-expression> | str(<expression>)
 	
 	<bool-expression> ::= true | false | <bool-expression> <binary-bool-operator>  <bool-expression> | <unary-bool-operator> <bool-expression>
@@ -78,6 +82,9 @@ EBNF
 	
 tokens
 
+	string-literal ::= "<any-char>"
+	integer-literal ::= regex: [0-9][0-9]*
+	boolean-literal ::= true | false
 	var
 	endvar
 	run
@@ -95,10 +102,7 @@ tokens
 	/
 	-
 	*
-	true
-	false
-	<string>
-	<identifier>
+	<identifier> ::= regex: [a-zA-Z0-9_][a-zA-Z0-9_]* | '[^']+'
 	print
 	str
 	(
