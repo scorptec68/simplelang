@@ -1,0 +1,58 @@
+	var
+	   test: string
+	   x: integer
+	   y: integer
+	   i: integer
+	   doit: boolean
+	   this boy: boolean
+	endvar
+	
+	run
+		x = 3
+		test = "hello"
+		    
+		y = x + 3
+		print("y =  " + str(x))
+		
+		if y > 3
+			test = "super"
+		elseif y < 3 
+		    test = "wonder"
+		else
+		    test = "duper"
+		endif
+		
+		print(test)
+		test = test - "r"
+		print(test)
+
+		loop 10
+		    i = i + 1
+		endloop
+		
+                // this is a comment
+		print("i = " + str(i))
+         endrun
+
+processText -> var item
+processSeparator
+processText -> identifier item
+processSeparator
+processText -> colon
+processSeparator
+processText -> literal-int item
+processSeparator
+
+processText:
+* symbol lookup (one rune (e.g. '<') or 2 rune (e.g. '<=') matches)
+   * operator
+   * string literal
+   * comment
+* alphanumeric (includes 1 char separators of space or underscore or hyphen) -> s
+( abc def-ghi_klm nop 123)
+    * lookup s in keyword table
+    * if not found then identifier
+* numeric -> literal int
+
+processSeparator:
+* eat up spaces, tabs, newlines, comments

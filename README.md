@@ -12,7 +12,7 @@ Example:
 	   y: integer
 	   i: integer
 	   doit: boolean
-	   'this boy': boolean
+	   this boy: boolean
 	endvar
 	
 	run
@@ -102,9 +102,15 @@ tokens
 	/
 	-
 	*
-	<identifier> ::= regex: [a-zA-Z0-9_][a-zA-Z0-9_]* | '[^']+'
+	<identifier> ::= regex: [a-zA-Z0-9_][a-zA-Z0-9_ ]*
 	print
 	str
 	(
 	)
 	:
+	
+formatting
+
+* arbitrary lead up white space
+* mostly then single space between tokens
+* except for round brackets
