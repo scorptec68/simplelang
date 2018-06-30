@@ -163,6 +163,10 @@ func (l *lexer) peek() rune {
 	return r
 }
 
+func (l *lexer) itemString() string {
+	return l.input[l.start:l.pos]
+}
+
 // backup steps back one rune. Can only be called once per call of next.
 func (l *lexer) backup() {
 	l.pos -= l.width
@@ -329,17 +333,18 @@ func processSymbol(l *lexer) processResult {
 
 func processStringLiteral(l *lexer) processResult {
     rune := l.next()
-    if rune == '"' {
-    	// now look for matching "
-    	if l.acceptNotRun("\"") {
-			l.emit(itemStringLiteral)
-			return resultMatch
-		} else {
-    		l.errorf("Could not find string terminstor")
-    		return resultMatchError
-		}
+    if rune != '"' {
+		return resultNoMatch
 	}
-	return resultNoMatch
+
+	// now look for matching "
+	if l.acceptNotRun("\"") {
+		l.emit(itemStringLiteral)
+		return resultMatch
+	} else {
+		l.errorf("Could not find string terminstor")
+		return resultMatchError
+	}
 }
 
 func processNumericLiteral(l *lexer) processResult {
@@ -370,9 +375,34 @@ func processNumericLiteral(l *lexer) processResult {
 }
 
 func processKeyword(l *lexer) processResult {
+	rune := l.peek()
+
+	if !isAlpha(rune) {
+		return resultNoMatch
+	}
+
 	// extract word up to space or end of line
 	// test word in the keywords list
-	return resultNoMatch
+	for {
+		rune := l.next()
+		if isSpace(rune) || isEndOfLine(rune) || rune == eof {
+			l.backup()
+
+			// now look up word
+			word := l.itemString()
+			if item, ok := symbols[word]; ok {
+				l.emit(item)
+				return resultMatch
+			} else {
+				l.ignore()
+				return resultNoMatch
+			}
+		}
+		if !isAlpha(rune) {
+			l.ignore()
+			return resultNoMatch
+		}
+	}
 }
 
 func processIdentifier(l *lexer) processResult {
@@ -423,4 +453,8 @@ func isEndOfLine(r rune) bool {
 // isAlphaNumeric reports whether r is an alphabetic, digit, or underscore.
 func isAlphaNumeric(r rune) bool {
 	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
+func isAlpha(r rune) bool {
+	return unicode.IsLetter(r)
 }
