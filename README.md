@@ -12,11 +12,14 @@ Example:
 	   y: integer
 	   i: integer
 	   doit: boolean
-	   this boy: boolean
+	   this-boy: boolean
 	endvar
 	
 	run
-		x = 3
+	    this-boy = true
+	    x = 3 + 1000000 + 2
+	          + 4 + 6
+	    x = 3
 		test = "hello"
 		    
 		y = x + 3
@@ -45,17 +48,17 @@ EBNF
 
 	<program> ::= <var-decl> <run-defn>
 	
-	<var-decl> ::= var {<decl>} endvar
+	<var-decl> ::= var \n {<decl>} endvar \n
 	
-	<decl> ::= <identifier> : <type>
+	<decl> ::= <identifier> : <type> \n
 	
 	<type> ::= integer | string | boolean
 	
-	<run-defn> ::= run {<statement>} endrun
+	<run-defn> ::= run \n {<statement>} endrun \n
 	
 	<statement> ::= <assignment> | <loop> | <if> | <print>
 	
-	<assignment> ::= <identifier> = <expression>
+	<assignment> ::= <identifier> = <expression> \n
 	
 	<expression> ::= ( <expression> ) | <int-expression> | <bool-expression> | <string-expression> | <identifier>
 	
@@ -74,11 +77,11 @@ EBNF
 	<binary-str-operator> ::= + | -
 	
 	
-	<loop> ::= loop | loop <int-expression> endloop | loop <bool-expression> endloop
+	<loop> ::= loop {<statement>} endloop | loop <int-expression> {<statement>} endloop | loop <bool-expression> {<statement>} endloop
 	
-	<if> ::= if <bool-expression> {<statement>} {elseif <bool-expression> {<statement>}} [else {<statement>}] endif
+	<if> ::= if <bool-expression> \n {<statement>} {elseif <bool-expression> \n {<statement>}} [else \n {<statement>}] endif \n
 	
-	<print> ::= print(<string-expression>)
+	<print> ::= print(<string-expression>) \n
 	
 tokens
 
@@ -108,9 +111,12 @@ tokens
 	(
 	)
 	:
+	\n
 	
 formatting
 
-* arbitrary lead up white space
-* mostly then single space between tokens
-* except for round brackets
+* requires 1 space between each token
+* arbitrary leadup space for indentation
+* \n token
+* lexer can hide \n token if line ends in an operator
+

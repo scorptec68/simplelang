@@ -46,8 +46,6 @@ const (
 	itemError        itemType = iota // error occurred; value is text of error
 	itemIntegerLiteral // integer value
 	itemStringLiteral  // quotable string
-	itemTrue          // true
-	itemFalse         // false
 	itemEquals        // '='
 	itemNotEquals     // '#'
 	itemLessEquals    // '<='
@@ -64,10 +62,9 @@ const (
 	itemLeftParen  // '('
 	itemRightParen // ')'
 	itemColon      // ':'
+	itemNewLine    // '\n'
 	itemEOF
 	itemIdentifier // alphanumeric identifier
-	itemSingleSpace  // ' '
-	itemWhiteSpace   // run of spaces separating arguments
 	// Keywords appear after all the rest.
 	itemKeyword  // used only to delimit the keywords
 	itemIf       // if keyword
@@ -81,9 +78,19 @@ const (
 	itemBoolean  // boolean keyword
 	itemString   // string keyword
 	itemInteger  // integer keyword
+	itemTrue     // true
+	itemFalse    // false
+	itemVar      // var
+	itemEndVar   // endvar
+	itemRun      // run
+	itemEndRun   // endrun
 )
 
 var keywords = map[string]itemType{
+	"var":      itemVar,
+	"endvar":   itemEndVar,
+	"run":      itemRun,
+	"endrun":   itemEndRun,
 	"if":       itemIf,
 	"else":     itemElse,
 	"elseif":   itemElseIf,
@@ -120,9 +127,9 @@ var symbols = map[string]itemType {
 
 type processFn func(*lexer) processResult
 
-const eof = -1
 
 const (
+	eof = -1
 	spaceChars      = " \t\r\n" // These are the space characters defined by Go itself.
 )
 
@@ -133,8 +140,8 @@ type lexer struct {
 	pos        Pos       // current position in the input
 	start      Pos       // start position of this item
 	width      Pos       // width of last rune read from input
+	prevItemType itemType; // previous item
 	items      chan item // channel of scanned items
-	parenDepth int       // nesting depth of ( ) exprs
 	line       int       // 1+number of newlines seen
 }
 
@@ -181,6 +188,12 @@ func (l *lexer) ignore() {
 	l.start = l.pos
 }
 
+// resets to start of token
+func (l *lexer) reset() {
+	l.line -= strings.Count(l.input[l.start:l.pos], "\n")
+	l.pos = l.start
+}
+
 //--------------------------------------------------------------------------------------------
 
 // accept consumes the next rune if it's from the valid set.
@@ -224,6 +237,7 @@ func (l *lexer) acceptNotRun(valid string) bool {
 // emit passes an item back to the client.
 func (l *lexer) emit(t itemType) {
 	l.items <- item{t, l.start, l.input[l.start:l.pos], l.line}
+	l.prevItemType = t
 	l.start = l.pos
 }
 
@@ -260,6 +274,34 @@ func lex(name, input string) *lexer {
 	return l
 }
 
+var processFunctions = []processFn{processComment, processSymbol, processStringLiteral, processNumericLiteral,
+	processKeyword, processIdentifier}
+
+// run runs lexer over the input
+func (l *lexer) run() {
+	for {
+		if !processWhitespace(l) {
+			break
+		}
+		found := false
+		for _, processFunc := range processFunctions {
+			result := processFunc(l)
+			switch result {
+			case resultMatch:
+				found = true
+				break
+			case resultMatchError:
+				break
+			}
+		}
+		if !found {
+			l.errorf("Invalid token")
+			break
+		}
+	}
+	l.emit(itemEOF)
+	close(l.items)
+}
 
 
 /*
@@ -270,9 +312,17 @@ func lex(name, input string) *lexer {
 func processWhitespace(l *lexer) bool {
 	for {
 		rune := l.next()
-		if rune == eof {
+
+		switch rune {
+		case eof:
 			return false
+		case '\n':
+			if !isBinaryOperator(l.prevItemType) {
+				l.emit(itemNewLine)
+			}
+			// otherwise binary operator prior to end of line continue to next line
 		}
+
 		if !strings.ContainsRune(spaceChars, rune) {
 			l.backup()
 			l.ignore()
@@ -375,9 +425,8 @@ func processNumericLiteral(l *lexer) processResult {
 }
 
 func processKeyword(l *lexer) processResult {
-	rune := l.peek()
 
-	if !isAlpha(rune) {
+	if !isAlpha(l.peek()) {
 		return resultNoMatch
 	}
 
@@ -385,7 +434,7 @@ func processKeyword(l *lexer) processResult {
 	// test word in the keywords list
 	for {
 		rune := l.next()
-		if isSpace(rune) || isEndOfLine(rune) || rune == eof {
+		if isEndOfWord(rune) {
 			l.backup()
 
 			// now look up word
@@ -394,12 +443,12 @@ func processKeyword(l *lexer) processResult {
 				l.emit(item)
 				return resultMatch
 			} else {
-				l.ignore()
+				l.reset()
 				return resultNoMatch
 			}
 		}
 		if !isAlpha(rune) {
-			l.ignore()
+			l.reset()
 			return resultNoMatch
 		}
 	}
@@ -407,38 +456,27 @@ func processKeyword(l *lexer) processResult {
 
 func processIdentifier(l *lexer) processResult {
 	// extract word up to space or end of line
-	// test word in the keywords list
-	return resultNoMatch
-}
+	// ensure word is all alpha numeric
 
+	if !isAlpha(l.peek()) {
+		return resultNoMatch
+	}
 
-var processFunctions = []processFn{processComment, processSymbol, processStringLiteral, processNumericLiteral,
-                                   processKeyword, processIdentifier}
-
-// run runs the state machine for the lexer.
-func (l *lexer) run() {
 	for {
-		if !processWhitespace(l) {
-			break
+		rune := l.next()
+		if isEndOfWord(rune) {
+			l.backup()
+			l.emit(itemIdentifier)
+			return resultMatch
 		}
-		found := false
-		for _, processFunc := range processFunctions {
-		    result := processFunc(l)
-		    switch result {
-			case resultMatch:
-				found = true
-				break
-			case resultMatchError:
-				break
-			}
-		}
-		if !found {
-			l.errorf("Invalid token")
-			break
+		if !isAlphaNumeric(rune) {
+			l.reset()
+			return resultNoMatch
 		}
 	}
-	close(l.items)
 }
+
+
 
 // isSpace reports whether r is a space character.
 func isSpace(r rune) bool {
@@ -452,9 +490,23 @@ func isEndOfLine(r rune) bool {
 
 // isAlphaNumeric reports whether r is an alphabetic, digit, or underscore.
 func isAlphaNumeric(r rune) bool {
-	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
+	return r == '_' || r == '-' || unicode.IsLetter(r) || unicode.IsDigit(r)
 }
 
 func isAlpha(r rune) bool {
 	return unicode.IsLetter(r)
+}
+
+func isEndOfWord(r rune) bool {
+    return isSpace(r) || isEndOfLine(r) || r == eof
+}
+
+func isBinaryOperator(t itemType) bool {
+	switch t {
+	case itemLessThan, itemLessEquals, itemGreaterThan, itemGreaterEquals, itemEquals, itemPlus,
+		itemMinus, itemNotEquals, itemTimes, itemDivide, itemAnd, itemOr:
+		return true
+	default:
+		return false
+    }
 }
