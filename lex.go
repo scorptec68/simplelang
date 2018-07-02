@@ -26,7 +26,7 @@ func (i item) String() string {
 	case len(i.val) > 10:
 		return fmt.Sprintf("%.10q...", i.val)
 	}
-	return fmt.Sprintf("%q", i.val)
+	return fmt.Sprintf("%q (type %d)", i.val, i.typ)
 }
 
 // itemType identifies the type of lex items.
@@ -279,23 +279,28 @@ var processFunctions = []processFn{processComment, processSymbol, processStringL
 
 // run runs lexer over the input
 func (l *lexer) run() {
+	mainLoop:
 	for {
 		if !processWhitespace(l) {
 			break
 		}
+		//fmt.Println("testing", string(l.peek()))
 		found := false
+		processLoop:
 		for _, processFunc := range processFunctions {
+			//fmt.Println("func =", processFunc)
 			result := processFunc(l)
+			//fmt.Println("peek = ", string(l.peek()))
 			switch result {
 			case resultMatch:
 				found = true
-				break
+				break processLoop
 			case resultMatchError:
-				break
+				break mainLoop
 			}
 		}
 		if !found {
-			l.errorf("Invalid token")
+			l.errorf("Invalid token: '%s'", string(l.peek()))
 			break
 		}
 	}
@@ -382,10 +387,11 @@ func processSymbol(l *lexer) processResult {
 }
 
 func processStringLiteral(l *lexer) processResult {
-    rune := l.next()
-    if rune != '"' {
+    if l.peek() != '"' {
 		return resultNoMatch
 	}
+
+	l.next()
 
 	// now look for matching "
 	if l.acceptNotRun("\"") {
@@ -439,7 +445,7 @@ func processKeyword(l *lexer) processResult {
 
 			// now look up word
 			word := l.itemString()
-			if item, ok := symbols[word]; ok {
+			if item, ok := keywords[word]; ok {
 				l.emit(item)
 				return resultMatch
 			} else {
