@@ -392,10 +392,13 @@ func processStringLiteral(l *lexer) processResult {
 	}
 
 	l.next()
+	l.ignore()
 
 	// now look for matching "
 	if l.acceptNotRun("\"") {
 		l.emit(itemStringLiteral)
+		l.next()
+		l.ignore()
 		return resultMatch
 	} else {
 		l.errorf("Could not find string terminstor")
@@ -470,14 +473,10 @@ func processIdentifier(l *lexer) processResult {
 
 	for {
 		rune := l.next()
-		if isEndOfWord(rune) {
+		if !isAlphaNumeric(rune) {
 			l.backup()
 			l.emit(itemIdentifier)
 			return resultMatch
-		}
-		if !isAlphaNumeric(rune) {
-			l.reset()
-			return resultNoMatch
 		}
 	}
 }
