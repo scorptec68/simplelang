@@ -17,8 +17,8 @@ Example:
 	
 	run
 	    this-boy = true
-	    x = 3 + 1000000 + 2
-	          + 4 + 6
+	    x = 3 + 1000000 + 2 +
+	          4 + 6
 	    x = 3
 		test = "hello"
 		    
