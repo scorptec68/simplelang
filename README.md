@@ -64,6 +64,7 @@ EBNF
 	
 	<int-expression> ::= <integer> 
 	     | <int-expression> <binary-int-operator> <int-expression>
+	     | <unary-int-operator> <int-expression>
 	
 	<string-expression> ::= <string-literal> 
 	     | <str-expression> <binary-str-operator> <str-expression> | str(<expression>)
