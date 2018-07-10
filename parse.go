@@ -2,6 +2,9 @@ package simple_language
 
 import (
 	"errors"
+	"go/parser"
+	"golang.org/x/tools/go/gcimporter15/testdata"
+	"strconv"
 )
 
 type ValueType int
@@ -85,62 +88,154 @@ type Program struct {
 }
 
 type Variables struct {
-	values map[string]Value
+	values map[string]*Value
 }
 
 type Parser struct {
 	lex *lexer
+	token     [3]item // three-token lookahead for parser.
+	peekCount int
 }
 
-func (parser *Parser) ParseProgram() (prog *Program, err error) {
-	prog = new(Program)
+// nextItem returns the nextItem token.
+func (p *Parser) nextItem() item {
+	if p.peekCount > 0 {
+		p.peekCount--
+	} else {
+		p.token[0] = p.lex.nextItem()
+	}
+	return p.token[p.peekCount]
+}
+
+// backup backs the input stream up one token.
+func (p *Parser) backup() {
+	p.peekCount++
+}
+
+// backup2 backs the input stream up two tokens.
+// The zeroth token is already there.
+func (p *Parser) backup2(t1 item) {
+	p.token[1] = t1
+	p.peekCount = 2
+}
+
+// backup3 backs the input stream up three tokens
+// The zeroth token is already there.
+func (p *Parser) backup3(t2, t1 item) { // Reverse order: we're pushing back.
+	p.token[1] = t1
+	p.token[2] = t2
+	p.peekCount = 3
+}
+
+// peek returns but does not consume the nextItem token.
+func (p *Parser) peek() item {
+	if p.peekCount > 0 {
+		return p.token[p.peekCount-1]
+	}
+	p.peekCount = 1
+	p.token[0] = p.lex.nextItem()
+	return p.token[0]
+}
+
+func (parser *Parser) ParseProgram() (*Program, error) {
+	var err error
+	prog := new(Program)
 	prog.variables, err = parser.parseVariables()
 	if err != nil {
-		return
+		return nil, err
 	}
+	item := parser.nextItem()
+	if item.typ != itemRun {
+	    err := errors.New("Missing Run keyword")
+	    return nil, err
+	}
+
 	prog.stmtList, err = parser.parseStementList()
 	if err != nil {
-		return
+		return nil, err
 	}
-	return
+
+	item = parser.nextItem()
+	if item.typ != itemEndRun {
+		err := errors.New("Missing EndRun keyword")
+		return nil, err
+	}
+	return prog, nil
 }
 
-func (parser *Parser) parseVariables() (vars *Variables, err error) {
-	err = nil
-    vars = new(Variables)
-    vars.values = make(map[string]Value)
-    item := parser.lex.nextItem()
+func (parser *Parser) parseVariables() (*Variables, error) {
+    vars := new(Variables)
+    vars.values = make(map[string]*Value)
+    item := parser.nextItem()
     if item.typ != itemVar {
     	// no variables to process
-    	return
+		parser.backup()
+    	return vars, nil
 	}
 	// we have potentially some variables (could be empty)
 	for {
-		item = parser.lex.nextItem()
+		item = parser.nextItem()
 		switch item.typ {
 		case itemEndVar:
 			// end of variable declaration
-			return
+			return vars, nil
 		case itemEOF:
 			// end of any input which is an error
-			err = errors.New("Cannot find EndVar")
-			return
+			err := errors.New("Cannot find EndVar")
+			return nil, err
 		case itemIdentifier:
-            str := item.val
-			item = parser.lex.nextItem()
+            idStr := item.val
+			item = parser.nextItem()
 			if item.typ != itemColon {
-				err = errors.New("Expecting colon")
-				return
+				err := errors.New("Expecting colon")
+				return nil, err
 			}
-			item = parser.lex.nextItem()
-			if !(item.typ == itemString || item.typ == itemBoolean || item.typ == itemInteger) {
-				err = errors.New("Expecting a variable type")
-				return
+			value, err := parser.parseValue()
+			if err != nil {
+				return nil, err
 			}
-			return
-
+	        vars.values[idStr] = value
 		}
+	}
+}
 
+func (parser *Parser) parseValue() (*Value, error) {
+	var value Value
+	item := parser.nextItem()
+	if !(item.typ == itemString || item.typ == itemBoolean || item.typ == itemInteger) {
+		err := errors.New("Expecting a variable type")
+		return nil, err
+	}
+	switch item.typ {
+	case itemString:
+		value = Value{valueType: ValueString, stringVal: item.val}
+	case itemInteger:
+		i, _ := strconv.Atoi(item.val)
+		value = Value{valueType: ValueInteger, intVal: i}
+	case itemBoolean:
+		b, _ := strconv.ParseBool(item.val)
+		value = Value{valueType: ValueBoolean, boolVal: b}
+	}
+	return &value, nil
+}
+
+func isEndKeyword(i item) bool {
+	return i.typ == itemEndRun || i.typ == itemEndLoop || i.typ == itemEndIf;
+
+}
+
+func (parser *Parser) parseStatementList() ([]Statement, error) {
+	stmtList := []Statement{}
+	for {
+		stmt, err := parser.parseStatement()
+		if err != nil {
+			return nil, err
+		}
+		stmtList = append(stmtList, stmt)
+		item := parser.peek()
+		if isEndKeyword(item) {
+			return stmtList, nil
+		}
 	}
 }
 

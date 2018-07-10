@@ -148,7 +148,7 @@ type lexer struct {
 //--------------------------------------------------------------------------------------------
 // core rune processing
 
-// next returns the next rune in the input.
+// nextItem returns the nextItem rune in the input.
 func (l *lexer) next() rune {
 	if int(l.pos) >= len(l.input) {
 		l.width = 0
@@ -163,7 +163,7 @@ func (l *lexer) next() rune {
 	return r
 }
 
-// peek returns but does not consume the next rune in the input.
+// peek returns but does not consume the nextItem rune in the input.
 func (l *lexer) peek() rune {
 	r := l.next()
 	l.backup()
@@ -174,7 +174,7 @@ func (l *lexer) itemString() string {
 	return l.input[l.start:l.pos]
 }
 
-// backup steps back one rune. Can only be called once per call of next.
+// backup steps back one rune. Can only be called once per call of nextItem.
 func (l *lexer) backup() {
 	l.pos -= l.width
 	// Correct newline count.
@@ -196,7 +196,7 @@ func (l *lexer) reset() {
 
 //--------------------------------------------------------------------------------------------
 
-// accept consumes the next rune if it's from the valid set.
+// accept consumes the nextItem rune if it's from the valid set.
 func (l *lexer) accept(valid string) bool {
 	if strings.ContainsRune(valid, l.next()) {
 		return true
@@ -247,7 +247,7 @@ func (l *lexer) errorf(format string, args ...interface{}) {
 	l.items <- item{itemError, l.start, fmt.Sprintf(format, args...), l.line}
 }
 
-// nextItem returns the next item from the input.
+// nextItem returns the nextItem item from the input.
 // Called by the parser, not in the lexing goroutine.
 func (l *lexer) nextItem() item {
 	return <-l.items
@@ -310,7 +310,7 @@ func (l *lexer) run() {
 
 
 /*
- * Eat up any whitespace to the next non-whitespace
+ * Eat up any whitespace to the nextItem non-whitespace
  * Return true if found a non-whitespace rune to process
  * Return false if didn't find anything and reached EOF
  */
@@ -325,7 +325,7 @@ func processWhitespace(l *lexer) bool {
 			if !isBinaryOperator(l.prevItemType) {
 				l.emit(itemNewLine)
 			}
-			// otherwise binary operator prior to end of line continue to next line
+			// otherwise binary operator prior to end of line continue to nextItem line
 		}
 
 		if !strings.ContainsRune(spaceChars, rune) {
