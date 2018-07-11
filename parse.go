@@ -239,6 +239,91 @@ func (parser *Parser) parseStatementList() ([]Statement, error) {
 	}
 }
 
+func (parser *Parser) parseStatement() (stmt *Statement, err error) {
+	var stmtType StatementType
+
+	var assignStmt *AssignmentStatement
+	var ifStmt *IfStatement
+	var loopStmt *LoopStatement
+	var printStmt *PrintStatement
+
+    item := parser.nextItem()
+    switch item.typ {
+	case itemIdentifier:
+		stmtType = StmtAssignment
+		parser.backup()
+		assignStmt, err = parser.parseAssignment()
+	case itemIf:
+		stmtType = StmtIf
+		ifStmt, err = parser.parseIfStmt()
+	case itemLoop:
+		stmtType = StmtLoop
+		loopStmt, err = parser.parseLoopStmt()
+	case itemPrint:
+		stmtType = StmtPrint
+		printStmt, err = parser.parsePrintStmt()
+	}
+
+	return &Statement{stmtType, assignStmt, ifStmt, loopStmt, printStmt}, err
+}
+
+func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error) {
+	idItem := parser.nextItem()
+	op := parser.nextItem()
+	if op.typ != itemEquals {
+	    err	= errors.New("Missing expected equals assign")
+	}
+	exprn, err := parser.parseExpression()
+	if err != nil {
+		return nil, err
+	}
+    return &AssignmentStatement{idItem.val, exprn}, nil
+}
+
+func (parser *Parser) parseIfStatement() (ifStmt *IfStatement, err error) {
+	var elseifList []ElseIf
+	var elseStmtList []Statement
+
+    exprn, err := parser.parseBoolExpression()
+    if err != nil {
+    	return nil, err
+	}
+
+    stmtList, err := parser.parseStatementList()
+	if err != nil {
+		return nil, err
+	}
+
+	// test for next optional parts or the end
+    item := parser.nextItem()
+
+    // optional elseif
+    if item.typ == itemElseIf {
+		elseifList, err = parser.parseElseIfList()
+		if err != nil {
+			return nil, err
+		}
+		item = parser.nextItem()
+	}
+
+	// optional else
+	if item.typ == itemElse {
+		elseStmtList, err = parser.parseElse()
+		if err != nil {
+			return nil, err
+		}
+		item = parser.nextItem()
+	}
+
+	// mandatory endif
+	if item.typ != itemEndIf {
+	    err = errors.New("Missing endif")
+	    return nil, err
+	}
+
+	return &IfStatement{exprn, stmtList, elseifList, elseStmtList}, nil
+}
+
 type Value struct {
 	valueType ValueType
 
@@ -250,10 +335,10 @@ type Value struct {
 type Statement struct {
 	stmtType StatementType
 
-	loopStmt LoopStatement
-	ifStmt   IfStatement
-	assignmentStmt AssignmentStatement
-	printStmt PrintStatement
+	assignmentStmt *AssignmentStatement
+	ifStmt   *IfStatement
+	loopStmt *LoopStatement
+	printStmt *PrintStatement
 }
 
 type LoopStatement struct {
@@ -268,7 +353,7 @@ type IfStatement struct {
 	boolExpression BoolExpression
 	stmtList []Statement
     elsifList []ElseIf
-    elseStmt Statement
+    elseStmtList []Statement
 }
 
 type ElseIf struct {
