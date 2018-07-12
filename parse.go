@@ -46,6 +46,7 @@ const (
 
 const (
 	IntExprnValue IntExpressionType = iota
+	IntExprnVariable
 	IntExprnBinary
 	IntExprnUnary
 )
@@ -61,6 +62,7 @@ const (
 
 const (
 	BoolExprnValue BoolExpressionType = iota
+	BoolExprnVariable
 	BoolExprnBinary
 	BoolExprnUnary
 )
@@ -74,6 +76,7 @@ const (
 
 const (
 	StringExprnValue StringExpressionType = iota
+	StringExprnVariable
 	StringExprnBinary
 )
 
@@ -224,8 +227,8 @@ func isEndKeyword(i item) bool {
 
 }
 
-func (parser *Parser) parseStatementList() ([]Statement, error) {
-	stmtList := []Statement{}
+func (parser *Parser) parseStatementList() ([]*Statement, error) {
+	var stmtList []*Statement
 	for {
 		stmt, err := parser.parseStatement()
 		if err != nil {
@@ -255,13 +258,13 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 		assignStmt, err = parser.parseAssignment()
 	case itemIf:
 		stmtType = StmtIf
-		ifStmt, err = parser.parseIfStmt()
+		ifStmt, err = parser.parseIfStatement()
 	case itemLoop:
 		stmtType = StmtLoop
-		loopStmt, err = parser.parseLoopStmt()
+		loopStmt, err = parser.parseLoopStatement()
 	case itemPrint:
 		stmtType = StmtPrint
-		printStmt, err = parser.parsePrintStmt()
+		printStmt, err = parser.parsePrintStatement()
 	}
 
 	return &Statement{stmtType, assignStmt, ifStmt, loopStmt, printStmt}, err
@@ -278,6 +281,20 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 		return nil, err
 	}
     return &AssignmentStatement{idItem.val, exprn}, nil
+}
+
+func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err error) {
+	item := parser.nextItem()
+	switch item.typ {
+	case itemTrue:
+		boolExprn.boolExprnType = BoolExprnValue
+		boolExprn.boolValue = true
+	case itemFalse:
+		boolExprn.boolExprnType = BoolExprnValue
+		boolExprn.boolValue = false
+	case itemIdentifier:
+		TODO
+	}
 }
 
 func (parser *Parser) parseIfStatement() (ifStmt *IfStatement, err error) {
@@ -373,7 +390,6 @@ type PrintStatement struct {
 type Expression struct {
 	exprnType ExpressionType
 
-	identifier string
 	intExpression IntegerExpression
 	boolExpression BoolExpression
 	stringExpression StringExpression
@@ -383,6 +399,7 @@ type IntegerExpression struct {
 	intExprnType IntExpressionType
 
     intVal int
+	identifier string
     lhsExprn IntegerExpression
     rhsExprn IntegerExpression
     operator IntOperatorType
@@ -392,6 +409,7 @@ type BoolExpression struct {
 	boolExprnType BoolExpressionType
 
 	boolValue bool
+	identifier string
 	lhsExprn BoolExpression
 	rhsExprn BoolExpression
 	operator BoolOperatorType
@@ -401,6 +419,7 @@ type StringExpression struct {
 	strExprnType StringExpressionType
 
 	strVal string
+	identifier string
 	lhsExprn StringExpression
 	rhsExprn StringExpression
 	operator StringOperatorType

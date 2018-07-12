@@ -60,16 +60,16 @@ EBNF
 	
 	<assignment> ::= <identifier> = <expression> \n
 	
-	<expression> ::= ( <expression> ) | <int-expression> | <bool-expression> | <string-expression> | <identifier>
+	<expression> ::= ( <expression> ) | <int-expression> | <bool-expression> | <string-expression>
 	
-	<int-expression> ::= <integer> 
+	<int-expression> ::= <integer> | <identifier>
 	     | <int-expression> <binary-int-operator> <int-expression>
 	     | <unary-int-operator> <int-expression>
 	
-	<string-expression> ::= <string-literal> 
+	<string-expression> ::= <string-literal> | <identifier>
 	     | <str-expression> <binary-str-operator> <str-expression> | str(<expression>)
 	
-	<bool-expression> ::= true | false | <bool-expression> <binary-bool-operator>  <bool-expression> | <unary-bool-operator> <bool-expression>
+	<bool-expression> ::= true | false | <identifier> | <bool-expression> <binary-bool-operator>  <bool-expression> | <unary-bool-operator> <bool-expression>
 	          
 	<binary-bool-operator> ::= & | \| | = | < | > | <= | >=
 	<unary-bool-operator> ::= ~
