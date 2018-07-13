@@ -63,7 +63,8 @@ const (
 const (
 	BoolExprnValue BoolExpressionType = iota
 	BoolExprnVariable
-	BoolExprnBinary
+	BoolExprnIntBinary
+	BoolExprnBoolBinary
 	BoolExprnUnary
 )
 
@@ -293,7 +294,72 @@ func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err erro
 		boolExprn.boolExprnType = BoolExprnValue
 		boolExprn.boolValue = false
 	case itemIdentifier:
-		TODO
+		boolExprn.boolExprnType = BoolExprnVariable
+		boolExprn.identifier = item.val
+	case itemNot:
+		lhsBoolExprn, err := parser.parseBoolExpression()
+		if err == nil {
+			boolExprn.boolExprnType = BoolExprnUnary
+			boolExprn.lhsBoolExprn = lhsBoolExprn
+			return boolExprn, nil
+		} else {
+			parser.backup()
+			err = errors.New("Missing boolean expression for unary not")
+			return nil, err
+		}
+	default:
+		lhsBoolExprn, err := parser.parseBoolExpression()
+		if err == nil {
+			// check for boolean operators
+		    item = parser.nextItem()
+		    if item.typ == itemAnd || item.typ == itemOr {
+		    	rhsBoolExprn, err := parser.parseBoolExpression()
+		    	if err == nil {
+		    	    // we have a boolean expression, yay!
+					boolExprn.boolExprnType = BoolExprnBoolBinary
+					boolExprn.lhsBoolExprn = lhsBoolExprn
+					boolExprn.rhsBoolExprn = rhsBoolExprn
+					return boolExprn, nil
+				} else {
+					parser.backup()
+					err = errors.New("right hand side is not a boolean expression")
+					return nil, err
+				}
+			} else {
+				parser.backup()
+				err = errors.New("missing operator for right hand boolean expression")
+				return nil, err
+			}
+		} else {
+			// try the integer expression
+			lhsIntExprn, err := parser.parseIntExpression()
+			if err == nil {
+				item = parser.nextItem()
+				if item.typ == itemLessThan || item.typ == itemGreaterThan || item.typ == itemLessEquals ||
+					item.typ == itemGreaterEquals {
+					rhsIntExprn, err := parser.parseIntExpression()
+					if err == nil {
+						// we have an integer expression, yay!
+						boolExprn.boolExprnType = BoolExprnIntBinary
+						boolExprn.lhsIntExprn = lhsIntExprn
+						boolExprn.rhsIntExprn = rhsIntExprn
+						return boolExprn, nil
+					} else {
+						parser.backup()
+						err = errors.New("right hand side is not an integer expression")
+						return nil, err
+					}
+				} else {
+					parser.backup()
+					err = errors.New("missing operator for right hand integer expression")
+					return nil, err
+				}
+			} else {
+				parser.backup()
+				err = errors.New("Couldn't parse boolean expression")
+				return nil, err
+			}
+		}
 	}
 }
 
@@ -361,13 +427,13 @@ type Statement struct {
 type LoopStatement struct {
 	loopType LoopType
 
-	intExpression IntegerExpression
-	boolExpression BoolExpression
+	intExpression *IntegerExpression
+	boolExpression *BoolExpression
 	stmtList []Statement
 }
 
 type IfStatement struct {
-	boolExpression BoolExpression
+	boolExpression *BoolExpression
 	stmtList []Statement
     elsifList []ElseIf
     elseStmtList []Statement
@@ -380,19 +446,19 @@ type ElseIf struct {
 
 type AssignmentStatement struct {
 	identifier string
-	exprn Expression
+	exprn *Expression
 }
 
 type PrintStatement struct {
-	exprn StringExpression
+	exprn *StringExpression
 }
 
 type Expression struct {
 	exprnType ExpressionType
 
-	intExpression IntegerExpression
-	boolExpression BoolExpression
-	stringExpression StringExpression
+	intExpression *IntegerExpression
+	boolExpression *BoolExpression
+	stringExpression *StringExpression
 }
 
 type IntegerExpression struct {
@@ -400,8 +466,8 @@ type IntegerExpression struct {
 
     intVal int
 	identifier string
-    lhsExprn IntegerExpression
-    rhsExprn IntegerExpression
+    lhsExprn *IntegerExpression
+    rhsExprn *IntegerExpression
     operator IntOperatorType
 }
 
@@ -410,8 +476,10 @@ type BoolExpression struct {
 
 	boolValue bool
 	identifier string
-	lhsExprn BoolExpression
-	rhsExprn BoolExpression
+	lhsBoolExprn *BoolExpression
+	rhsBoolExprn *BoolExpression
+	lhsIntExprn *IntExpression
+	rhsIntExprn *IntExpression
 	operator BoolOperatorType
 }
 

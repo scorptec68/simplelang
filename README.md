@@ -69,9 +69,11 @@ EBNF
 	<string-expression> ::= <string-literal> | <identifier>
 	     | <str-expression> <binary-str-operator> <str-expression> | str(<expression>)
 	
-	<bool-expression> ::= true | false | <identifier> | <bool-expression> <binary-bool-operator>  <bool-expression> | <unary-bool-operator> <bool-expression>
+	<bool-expression> ::= true | false | <identifier> | <bool-expression> <binary-bool-operator>  <bool-expression> | 
+	      <unary-bool-operator> <bool-expression> | <int-expression> <binary-int-comparator> <int-expression>
 	          
-	<binary-bool-operator> ::= & | \| | = | < | > | <= | >=
+	<binary-bool-operator> ::= & | \|
+	<binary-int-comparator> ::= = | < | > | <= | >=
 	<unary-bool-operator> ::= ~
 	<binary-int-operator> ::= + | - | / | *
 	<unary-int-operator> ::= -
