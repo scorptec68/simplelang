@@ -5,6 +5,7 @@ import (
 	"go/parser"
 	"golang.org/x/tools/go/gcimporter15/testdata"
 	"strconv"
+	"fmt"
 )
 
 type ValueType int
@@ -13,6 +14,7 @@ type LoopType int
 type ExpressionType int
 type IntExpressionType int
 type IntOperatorType int
+type IntComparatorType int
 type BoolExpressionType int
 type BoolOperatorType int
 type StringExpressionType int
@@ -22,6 +24,7 @@ const (
 	ValueInteger ValueType = iota
     ValueString
     ValueBoolean
+    ValueNone
 )
 
 const (
@@ -76,6 +79,14 @@ const (
 )
 
 const (
+	IntCompLessThan IntComparatorType = iota
+	IntCompGreaterThan
+	IntCompLessEquals
+    IntCompGreaterEquals
+    IntCompEquals
+)
+
+const (
 	StringExprnValue StringExpressionType = iota
 	StringExprnVariable
 	StringExprnBinary
@@ -96,6 +107,8 @@ type Variables struct {
 }
 
 type Parser struct {
+	variables *Variables
+
 	lex *lexer
 	token     [3]item // three-token lookahead for parser.
 	peekCount int
@@ -148,6 +161,8 @@ func (parser *Parser) ParseProgram() (*Program, error) {
 	if err != nil {
 		return nil, err
 	}
+	parser.variables = prog.variables
+
 	item := parser.nextItem()
 	if item.typ != itemRun {
 	    err := errors.New("Missing Run keyword")
@@ -223,6 +238,14 @@ func (parser *Parser) parseValue() (*Value, error) {
 	return &value, nil
 }
 
+func (parser *Parser) lookupType(id string) ValueType {
+	val, ok := parser.variables.values[id]
+	if ok {
+		return val.valueType
+	}
+	return ValueNone
+}
+
 func isEndKeyword(i item) bool {
 	return i.typ == itemEndRun || i.typ == itemEndLoop || i.typ == itemEndIf;
 
@@ -271,19 +294,63 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 	return &Statement{stmtType, assignStmt, ifStmt, loopStmt, printStmt}, err
 }
 
+// Note: other parsers use panic/recover instead of returning an error
+
 func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error) {
 	idItem := parser.nextItem()
+	assign.identifier = idItem.val
+
 	op := parser.nextItem()
 	if op.typ != itemEquals {
 	    err	= errors.New("Missing expected equals assign")
+	    return nil, err
 	}
-	exprn, err := parser.parseExpression()
-	if err != nil {
-		return nil, err
+
+	idType := parser.lookupType(assign.identifier)
+	switch idType {
+	case ValueBoolean:
+		boolExprn, err := parser.parseBoolExpression()
+		if err != nil {
+			return nil, err
+		}
+		assign.exprn = new(Expression)
+		assign.exprn.exprnType = ExprnBoolean
+		assign.exprn.boolExpression = boolExprn
+		return assign, nil
+	case ValueInteger:
+		// TODO
+		return assign, nil
+	case ValueString:
+		// TODO
+		return assign, nil
+	default:
+		return nil, fmt.Errorf("Assignment to undeclared variable: %s", idItem.val)
 	}
-    return &AssignmentStatement{idItem.val, exprn}, nil
 }
 
+//
+// e.g: (a + 3 * (c - 4)) < 10 & (d & e | f)
+//
+// This function is broken
+// Change grammar to:
+//
+//<bool-expression>::=<bool-term>{<or><bool-term>}
+//<bool-term>::=<bool-factor>{<and><bool-factor>}
+//<bool-factor>::=<bool-constant>|<not><bool-factor>|(<bool-expression>)|<int-comparison>
+//<int-comparison>::=<int-expression><int-comp><int-expression>
+//
+//<int-expression>::=<int-term>{<plus-or-minus><int-term>}
+//<int-term>::=<int-factor>{<times-or-divice><int-factor>}
+//<int-factor>::=<int-constant>|<minus><int-factor>|(<int-expression>)
+//...
+//<bool-constant>::= false|true
+//<or>::='|'
+//<and>::='&'
+//<not>::='!'
+//<plus-or-minus>::='+' | '-'
+//<times-or-divide>::= '*' | '/'
+//<minus>::='-'
+//
 func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err error) {
 	item := parser.nextItem()
 	switch item.typ {
@@ -364,8 +431,8 @@ func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err erro
 }
 
 func (parser *Parser) parseIfStatement() (ifStmt *IfStatement, err error) {
-	var elseifList []ElseIf
-	var elseStmtList []Statement
+	var elseifList []*ElseIf
+	var elseStmtList []*Statement
 
     exprn, err := parser.parseBoolExpression()
     if err != nil {
@@ -429,19 +496,19 @@ type LoopStatement struct {
 
 	intExpression *IntegerExpression
 	boolExpression *BoolExpression
-	stmtList []Statement
+	stmtList []*Statement
 }
 
 type IfStatement struct {
 	boolExpression *BoolExpression
-	stmtList []Statement
-    elsifList []ElseIf
-    elseStmtList []Statement
+	stmtList []*Statement
+    elsifList []*ElseIf
+    elseStmtList []*Statement
 }
 
 type ElseIf struct {
 	boolExpression BoolExpression
-	stmtList []Statement
+	stmtList []*Statement
 }
 
 type AssignmentStatement struct {
@@ -474,13 +541,20 @@ type IntegerExpression struct {
 type BoolExpression struct {
 	boolExprnType BoolExpressionType
 
-	boolValue bool
-	identifier string
+	boolValue bool // true or false
+
+	identifier string // variable
+
+	// boolean operator: and, or, not
 	lhsBoolExprn *BoolExpression
 	rhsBoolExprn *BoolExpression
+	boolOperator BoolOperatorType
+
+	// integer comparisons: <, >, <=, >=, =
 	lhsIntExprn *IntExpression
 	rhsIntExprn *IntExpression
-	operator BoolOperatorType
+	intComparator IntComparatorType
+
 }
 
 type StringExpression struct {

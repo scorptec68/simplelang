@@ -60,26 +60,24 @@ EBNF
 	
 	<assignment> ::= <identifier> = <expression> \n
 	
-	<expression> ::= ( <expression> ) | <int-expression> | <bool-expression> | <string-expression>
+	<expression> ::= <int-expression> | <bool-expression> | <string-expression>
 	
-	<int-expression> ::= <integer> | <identifier>
-	     | <int-expression> <binary-int-operator> <int-expression>
-	     | <unary-int-operator> <int-expression>
-	
-	<string-expression> ::= <string-literal> | <identifier>
-	     | <str-expression> <binary-str-operator> <str-expression> | str(<expression>)
-	
-	<bool-expression> ::= true | false | <identifier> | <bool-expression> <binary-bool-operator>  <bool-expression> | 
-	      <unary-bool-operator> <bool-expression> | <int-expression> <binary-int-comparator> <int-expression>
-	          
-	<binary-bool-operator> ::= & | \|
-	<binary-int-comparator> ::= = | < | > | <= | >=
-	<unary-bool-operator> ::= ~
-	<binary-int-operator> ::= + | - | / | *
-	<unary-int-operator> ::= -
-	<binary-str-operator> ::= + | -
-	
-	
+	<bool-expression> ::= <bool-term> {<or><bool-term>}
+    <bool-term> ::= <bool-factor> {<and><bool-factor>}
+    <bool-factor> ::= <bool-constant>|<unary-bool-operator><bool-factor>|<identifier>|
+                       <lparen> <bool-expression> <rparen>
+                       |<int-comparison>
+    <int-comparison> ::= <int-expression> <int-comp> <int-expression>
+    
+    <int-expression> ::= <int-term> {<plus-or-minus> <int-term>}
+    <int-term> ::= <int-factor> {<times-or-divice> <int-factor>}
+    <int-factor> ::= <int-constant> | <identifier> | <unary-int-operator><int-factor> 
+                      | <lparen><int-expression><rparen>
+    
+	<string-expression> ::= <str-term> {<binary-str-operator> <str-term>}
+	<string-term> ::= <string-literal> | <identifier> | str(<expression>)
+	                     | <lparen><string-expression><rparen>
+    
 	<loop> ::= loop {<statement>} endloop | loop <int-expression> {<statement>} endloop | loop <bool-expression> {<statement>} endloop
 	
 	<if> ::= if <bool-expression> \n {<statement>} {elseif <bool-expression> \n {<statement>}} [else \n {<statement>}] endif \n
@@ -87,6 +85,19 @@ EBNF
 	<print> ::= print(<string-expression>) \n
 	
 tokens
+
+    <lparen> ::= '('
+    <rparen> ::= ')'
+    <bool-constant> ::= false|true
+    <or> ::= '|'
+    <and> ::= '&'
+    <not> ::= '!'
+    <plus-or-minus> ::= '+' | '-'
+    <times-or-divide> ::= '*' | '/'
+    <unary-int-operator> ::='-'
+	<binary-int-comparator> ::= '=' | '<' | '>' | '<=' | '>='
+	<unary-bool-operator> ::= '~'
+	<binary-str-operator> ::= '+'
 
 	string-literal ::= "<any-char>"
 	integer-literal ::= regex: [0-9][0-9]*
