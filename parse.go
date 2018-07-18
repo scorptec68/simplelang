@@ -6,6 +6,7 @@ import (
 	"golang.org/x/tools/go/gcimporter15/testdata"
 	"strconv"
 	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type ValueType int
@@ -352,7 +353,23 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 //<minus>::='-'
 //
 func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err error) {
-	item := parser.nextItem()
+	for parser.peek().typ != itemNewLine {
+		boolTerm, err := parser.parseBoolTerm()
+		if err != nil {
+			return nil, errors.New("Error parsing boolean term")
+		}
+		boolExprn.boolOrTerms = append(boolExprn.boolOrTerms, boolTerm)
+	}
+	return boolExprn, nil
+}
+
+func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
+	// TODO
+    return boolTerm, err
+}
+
+// THIS IS ALL WRONG BELOW....
+func (parser *Parser) parseCrap() error {
 	switch item.typ {
 	case itemTrue:
 		boolExprn.boolExprnType = BoolExprnValue
@@ -494,7 +511,7 @@ type Statement struct {
 type LoopStatement struct {
 	loopType LoopType
 
-	intExpression *IntegerExpression
+	intExpression *IntExpression
 	boolExpression *BoolExpression
 	stmtList []*Statement
 }
@@ -523,46 +540,102 @@ type PrintStatement struct {
 type Expression struct {
 	exprnType ExpressionType
 
-	intExpression *IntegerExpression
+	intExpression *IntExpression
 	boolExpression *BoolExpression
 	stringExpression *StringExpression
 }
 
-type IntegerExpression struct {
-	intExprnType IntExpressionType
-
-    intVal int
-	identifier string
-    lhsExprn *IntegerExpression
-    rhsExprn *IntegerExpression
-    operator IntOperatorType
-}
+//<bool-expression>::=<bool-term>{<or><bool-term>}
+//<bool-term>::=<bool-factor>{<and><bool-factor>}
+//<bool-factor>::=<bool-constant>|<bool-identifier>|<not><bool-factor>|(<bool-expression>)|<int-comparison>
+//<int-comparison>::=<int-expression><int-comp><int-expression>
 
 type BoolExpression struct {
-	boolExprnType BoolExpressionType
-
-	boolValue bool // true or false
-
-	identifier string // variable
-
-	// boolean operator: and, or, not
-	lhsBoolExprn *BoolExpression
-	rhsBoolExprn *BoolExpression
-	boolOperator BoolOperatorType
-
-	// integer comparisons: <, >, <=, >=, =
-	lhsIntExprn *IntExpression
-	rhsIntExprn *IntExpression
-	intComparator IntComparatorType
-
+	boolOrTerms []*BoolTerm
 }
 
+type BoolTerm struct {
+	boolAndFactors []*BoolFactor
+}
+
+type BoolFactorType int
+const (
+	BoolFactorConst BoolFactorType = iota
+    BoolFactorId
+    BoolFactorNot
+    BoolFactorBracket
+    BoolFactorIntComparison
+)
+type BoolFactor struct {
+    boolFactorType BoolFactorType
+
+    boolConst bool
+    boolIdentifier string
+    notBoolFactor *BoolFactor
+    bracketedExprn *BoolExpression
+    intComparison IntComparison
+}
+
+type IntComparison struct {
+	// integer comparisons: <, >, <=, >=, =
+	intComparitor IntComparatorType
+
+	lhsIntExpression *IntExpression
+	rhsIntExpression *IntExpression
+}
+
+//<int-expression>::=<int-term>{<plus-or-minus><int-term>}
+//<int-term>::=<int-factor>{<times-or-divide><int-factor>}
+//<int-factor>::=<int-constant>|<int-identifier>|<minus><int-factor>|(<int-expression>)
+
+type IntExpression struct {
+    plusTerms []*IntTerm
+    minusTerms []*IntTerm
+}
+
+type IntTerm struct {
+    timesFactors []*IntFactor
+    divideFactors []*IntFactor
+}
+
+type IntFactorType int
+const (
+	IntFactorConst IntFactorType = iota
+	IntFactorId
+	IntFactorMinus
+	IntFactorBracket
+)
+
+type IntFactor struct {
+    intFactorType IntFactorType
+
+    intConst int
+    intIdentifier string
+    minusIntFactor *IntFactor
+    bracketedExprn *IntExpression
+}
+
+// <string-expression> ::= <str-term> {<binary-str-operator> <str-term>}
+// <string-term> ::= <string-literal> | <identifier> | str(<expression>) | <lparen><string-expression><rparen>
+
 type StringExpression struct {
-	strExprnType StringExpressionType
+	addTerms []*StringTerm
+}
+
+type StringTermType int
+
+const (
+	StringTermValue = iota
+    StringTermId
+    StringTermBracket
+    StringTermStringedExprn
+)
+
+type StringTerm struct {
+	strTermType StringTermType
 
 	strVal string
 	identifier string
-	lhsExprn StringExpression
-	rhsExprn StringExpression
-	operator StringOperatorType
+	bracketedExprn *StringExpression
+	stringedExprn *Expression
 }
