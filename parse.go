@@ -2,11 +2,9 @@ package simple_language
 
 import (
 	"errors"
-	"go/parser"
-	"golang.org/x/tools/go/gcimporter15/testdata"
 	"strconv"
 	"fmt"
-	"golang.org/x/crypto/ssh/terminal"
+	"go/parser"
 )
 
 type ValueType int
@@ -64,20 +62,6 @@ const (
 	IntBinaryOpDivide
 )
 
-const (
-	BoolExprnValue BoolExpressionType = iota
-	BoolExprnVariable
-	BoolExprnIntBinary
-	BoolExprnBoolBinary
-	BoolExprnUnary
-)
-
-const (
-	BoolUnaryOpNot IntOperatorType = iota
-	BoolBinaryOp
-	BoolBinaryOpOr
-	BoolBinaryOpAnd
-)
 
 const (
 	IntCompLessThan IntComparatorType = iota
@@ -99,8 +83,8 @@ const (
 )
 
 type Program struct {
-	variables *Variables
-	stmtList []Statement
+	variables *Variables // ?? make sense in Program or in Parser??
+	stmtList []*Statement
 }
 
 type Variables struct {
@@ -123,6 +107,14 @@ func (p *Parser) nextItem() item {
 		p.token[0] = p.lex.nextItem()
 	}
 	return p.token[p.peekCount]
+}
+
+func (parser *Parser) match(itemTyp itemType) (err error) {
+	item := parser.nextItem()
+	if item.typ != itemTyp {
+		return fmt.Errorf("Expecting %s", itemTyp
+	}
+    return nil
 }
 
 // backup backs the input stream up one token.
@@ -155,9 +147,7 @@ func (p *Parser) peek() item {
 	return p.token[0]
 }
 
-func (parser *Parser) ParseProgram() (*Program, error) {
-	var err error
-	prog := new(Program)
+func (parser *Parser) ParseProgram() (prog *Program, err error) {
 	prog.variables, err = parser.parseVariables()
 	if err != nil {
 		return nil, err
@@ -170,7 +160,7 @@ func (parser *Parser) ParseProgram() (*Program, error) {
 	    return nil, err
 	}
 
-	prog.stmtList, err = parser.parseStementList()
+	prog.stmtList, err = parser.parseStatementList()
 	if err != nil {
 		return nil, err
 	}
@@ -183,15 +173,16 @@ func (parser *Parser) ParseProgram() (*Program, error) {
 	return prog, nil
 }
 
-func (parser *Parser) parseVariables() (*Variables, error) {
-    vars := new(Variables)
+func (parser *Parser) parseVariables() (vars *Variables, err error) {
     vars.values = make(map[string]*Value)
+
     item := parser.nextItem()
     if item.typ != itemVar {
     	// no variables to process
 		parser.backup()
     	return vars, nil
 	}
+
 	// we have potentially some variables (could be empty)
 	for {
 		item = parser.nextItem()
@@ -205,22 +196,25 @@ func (parser *Parser) parseVariables() (*Variables, error) {
 			return nil, err
 		case itemIdentifier:
             idStr := item.val
-			item = parser.nextItem()
-			if item.typ != itemColon {
-				err := errors.New("Expecting colon")
-				return nil, err
+
+            err = parser.match(itemColon)
+            if err != nil {
+            	return nil, err
 			}
+
 			value, err := parser.parseValue()
 			if err != nil {
 				return nil, err
 			}
 	        vars.values[idStr] = value
+		default:
+			return nil, fmt.Errorf("Unexpected type: %s", item.typ)
 		}
 	}
+	return vars, err
 }
 
-func (parser *Parser) parseValue() (*Value, error) {
-	var value Value
+func (parser *Parser) parseValue() (value *Value, err error) {
 	item := parser.nextItem()
 	if !(item.typ == itemString || item.typ == itemBoolean || item.typ == itemInteger) {
 		err := errors.New("Expecting a variable type")
@@ -228,15 +222,15 @@ func (parser *Parser) parseValue() (*Value, error) {
 	}
 	switch item.typ {
 	case itemString:
-		value = Value{valueType: ValueString, stringVal: item.val}
+		value = &Value{valueType: ValueString, stringVal: item.val}
 	case itemInteger:
 		i, _ := strconv.Atoi(item.val)
-		value = Value{valueType: ValueInteger, intVal: i}
+		value = &Value{valueType: ValueInteger, intVal: i}
 	case itemBoolean:
 		b, _ := strconv.ParseBool(item.val)
-		value = Value{valueType: ValueBoolean, boolVal: b}
+		value = &Value{valueType: ValueBoolean, boolVal: b}
 	}
-	return &value, nil
+	return value, nil
 }
 
 func (parser *Parser) lookupType(id string) ValueType {
@@ -281,6 +275,7 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 		stmtType = StmtAssignment
 		parser.backup()
 		assignStmt, err = parser.parseAssignment()
+	/*
 	case itemIf:
 		stmtType = StmtIf
 		ifStmt, err = parser.parseIfStatement()
@@ -290,6 +285,7 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 	case itemPrint:
 		stmtType = StmtPrint
 		printStmt, err = parser.parsePrintStatement()
+	*/
 	}
 
 	return &Statement{stmtType, assignStmt, ifStmt, loopStmt, printStmt}, err
@@ -301,8 +297,8 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 	idItem := parser.nextItem()
 	assign.identifier = idItem.val
 
-	op := parser.nextItem()
-	if op.typ != itemEquals {
+	opItem := parser.nextItem()
+	if opItem.typ != itemEquals {
 	    err	= errors.New("Missing expected equals assign")
 	    return nil, err
 	}
@@ -338,6 +334,9 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 //<bool-expression>::=<bool-term>{<or><bool-term>}
 //<bool-term>::=<bool-factor>{<and><bool-factor>}
 //<bool-factor>::=<bool-constant>|<not><bool-factor>|(<bool-expression>)|<int-comparison>
+//
+// Leave out int-comparison for 1st testing
+//
 //<int-comparison>::=<int-expression><int-comp><int-expression>
 //
 //<int-expression>::=<int-term>{<plus-or-minus><int-term>}
@@ -352,9 +351,23 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 //<times-or-divide>::= '*' | '/'
 //<minus>::='-'
 //
+
+//<bool-expression>::=<bool-term>{<or><bool-term>}
 func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err error) {
+	// process 1st term
+	boolTerm, err := parser.parseBoolTerm()
+	if err != nil {
+		return nil, errors.New("Error parsing boolean term")
+	}
+	boolExprn.boolOrTerms = append(boolExprn.boolOrTerms, boolTerm)
+
+	// optionally process others
 	for parser.peek().typ != itemNewLine {
-		boolTerm, err := parser.parseBoolTerm()
+		item := parser.nextItem()
+		if item.typ != itemOr {
+			return nil, errors.New("Missing or term")
+		}
+		boolTerm, err = parser.parseBoolTerm()
 		if err != nil {
 			return nil, errors.New("Error parsing boolean term")
 		}
@@ -363,90 +376,65 @@ func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err erro
 	return boolExprn, nil
 }
 
+//<bool-term>::=<bool-factor>{<and><bool-factor>}
 func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
-	// TODO
+	// process 1st factor
+	boolFactor, err := parser.parseBoolFactor()
+	if err != nil {
+		return nil, errors.New("Error parsing boolean factor")
+	}
+	boolTerm.boolAndFactors = append(boolTerm.boolAndFactors, boolFactor)
+
+	// optionally process others
+	for parser.peek().typ != itemNewLine {
+		item := parser.nextItem()
+		if item.typ != itemAnd {
+			return nil, errors.New("Missing and factor")
+		}
+		boolFactor, err = parser.parseBoolFactor()
+		if err != nil {
+			return nil, errors.New("Error parsing boolean term")
+		}
+		boolTerm.boolAndFactors = append(boolTerm.boolAndFactors, boolFactor)
+	}
     return boolTerm, err
 }
 
-// THIS IS ALL WRONG BELOW....
-func (parser *Parser) parseCrap() error {
-	switch item.typ {
+//<bool-factor>::=<bool-constant>|<not><bool-factor>|(<bool-expression>)|<int-comparison>
+func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
+    item := parser.nextItem()
+    switch item.typ {
 	case itemTrue:
-		boolExprn.boolExprnType = BoolExprnValue
-		boolExprn.boolValue = true
+		boolFactor.boolFactorType = BoolFactorConst
+		boolFactor.boolConst = true
 	case itemFalse:
-		boolExprn.boolExprnType = BoolExprnValue
-		boolExprn.boolValue = false
-	case itemIdentifier:
-		boolExprn.boolExprnType = BoolExprnVariable
-		boolExprn.identifier = item.val
+		boolFactor.boolFactorType = BoolFactorConst
+		boolFactor.boolConst = false
 	case itemNot:
-		lhsBoolExprn, err := parser.parseBoolExpression()
-		if err == nil {
-			boolExprn.boolExprnType = BoolExprnUnary
-			boolExprn.lhsBoolExprn = lhsBoolExprn
-			return boolExprn, nil
-		} else {
-			parser.backup()
-			err = errors.New("Missing boolean expression for unary not")
-			return nil, err
+		boolFactor.boolFactorType = BoolFactorNot
+		factor, err := parser.parseBoolFactor()
+		if err != nil {
+			return nil, errors.New("Not missing factor")
+		}
+		boolFactor.notBoolFactor = factor
+	case itemLeftParen:
+		boolFactor.boolFactorType = BoolFactorBracket
+		exprn, err := parser.parseBoolExpression()
+		if err != nil {
+			return nil, errors.New("Can not process bracketed expression")
+		}
+		boolFactor.bracketedExprn = exprn
+		item = parser.nextItem()
+		if item.typ != itemRightParen {
+			return nil, errors.New("Missing right parenthesis on exxpression")
 		}
 	default:
-		lhsBoolExprn, err := parser.parseBoolExpression()
-		if err == nil {
-			// check for boolean operators
-		    item = parser.nextItem()
-		    if item.typ == itemAnd || item.typ == itemOr {
-		    	rhsBoolExprn, err := parser.parseBoolExpression()
-		    	if err == nil {
-		    	    // we have a boolean expression, yay!
-					boolExprn.boolExprnType = BoolExprnBoolBinary
-					boolExprn.lhsBoolExprn = lhsBoolExprn
-					boolExprn.rhsBoolExprn = rhsBoolExprn
-					return boolExprn, nil
-				} else {
-					parser.backup()
-					err = errors.New("right hand side is not a boolean expression")
-					return nil, err
-				}
-			} else {
-				parser.backup()
-				err = errors.New("missing operator for right hand boolean expression")
-				return nil, err
-			}
-		} else {
-			// try the integer expression
-			lhsIntExprn, err := parser.parseIntExpression()
-			if err == nil {
-				item = parser.nextItem()
-				if item.typ == itemLessThan || item.typ == itemGreaterThan || item.typ == itemLessEquals ||
-					item.typ == itemGreaterEquals {
-					rhsIntExprn, err := parser.parseIntExpression()
-					if err == nil {
-						// we have an integer expression, yay!
-						boolExprn.boolExprnType = BoolExprnIntBinary
-						boolExprn.lhsIntExprn = lhsIntExprn
-						boolExprn.rhsIntExprn = rhsIntExprn
-						return boolExprn, nil
-					} else {
-						parser.backup()
-						err = errors.New("right hand side is not an integer expression")
-						return nil, err
-					}
-				} else {
-					parser.backup()
-					err = errors.New("missing operator for right hand integer expression")
-					return nil, err
-				}
-			} else {
-				parser.backup()
-				err = errors.New("Couldn't parse boolean expression")
-				return nil, err
-			}
-		}
+		return nil, errors.New("Invalid boolean factor")
 	}
+	return boolFactor, nil
 }
 
+/*
 func (parser *Parser) parseIfStatement() (ifStmt *IfStatement, err error) {
 	var elseifList []*ElseIf
 	var elseStmtList []*Statement
@@ -490,6 +478,7 @@ func (parser *Parser) parseIfStatement() (ifStmt *IfStatement, err error) {
 
 	return &IfStatement{exprn, stmtList, elseifList, elseStmtList}, nil
 }
+*/
 
 type Value struct {
 	valueType ValueType
