@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strconv"
 	"fmt"
-	"go/parser"
 )
 
 type ValueType int
@@ -145,6 +144,63 @@ func (p *Parser) peek() item {
 	p.peekCount = 1
 	p.token[0] = p.lex.nextItem()
 	return p.token[0]
+}
+
+func printIndent(indent int) {
+	for indent > 0 {
+		fmt.Print("  ")
+		indent--
+	}
+}
+
+func PrintProgramIndent(prog *Program, indent int) {
+	printIndent(indent)
+	fmt.Printf("Program\n")
+	PrintVariables(prog.variables, indent + 1)
+	PrintStatementList(prog.stmtList, indent + 1)
+}
+
+func PrintVariables(vars *Variables, indent int) {
+	printIndent(indent)
+	fmt.Printf("Variables\n")
+	fmt.Printf("%v", vars.values)
+}
+
+func PrintStatementList(stmtList []*Statement, indent int) {
+	printIndent(indent)
+    fmt.Printf("StatementList\n")
+    for _, stmt := range stmtList {
+    	PrintStatement(stmt, indent + 1)
+	}
+}
+
+func PrintOneStatement(stmt *Statement, indent int) {
+	printIndent(indent)
+	fmt.Printf("Statement\n")
+
+	switch stmt.stmtType {
+	case StmtAssignment:
+		PrintAssignementStmt(stmt.assignmentStmt, indent + 1)
+	case StmtIf:
+		PrintIfStmt(stmt.ifStmt, indent + 1)
+	case StmtLoop:
+		PrintLoopStmt(stmt.loopStmt, indent + 1)
+	case StmtPrint:
+		PrintPrintStmt(stmt.printStmt, indent + 1)
+	}
+}
+
+func PrintAssignmentStmt(assign AssignmentStatement, indent int) {
+	printIndent(indent)
+	fmt.Printf("Assignment\n")
+
+	printIndent(indent)
+	fmt.Printf("lhs var = %s\n", assign.identifier)
+	PrintExpression(assign.exprn, indent + 1)
+}
+
+func PrintExpression(exprn *Expression, indent int) {
+
 }
 
 func (parser *Parser) ParseProgram() (prog *Program, err error) {
