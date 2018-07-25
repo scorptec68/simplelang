@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strconv"
 	"fmt"
+	"go/parser"
 )
 
 type ValueType int
@@ -98,6 +99,8 @@ type Parser struct {
 	peekCount int
 }
 
+//-------------------------------------------------------------------------------
+
 // nextItem returns the nextItem token.
 func (p *Parser) nextItem() item {
 	if p.peekCount > 0 {
@@ -146,6 +149,8 @@ func (p *Parser) peek() item {
 	return p.token[0]
 }
 
+//-------------------------------------------------------------------------------
+
 func printIndent(indent int) {
 	for indent > 0 {
 		fmt.Print("  ")
@@ -170,7 +175,7 @@ func PrintStatementList(stmtList []*Statement, indent int) {
 	printIndent(indent)
     fmt.Printf("StatementList\n")
     for _, stmt := range stmtList {
-    	PrintStatement(stmt, indent + 1)
+    	PrintOneStatement(stmt, indent + 1)
 	}
 }
 
@@ -180,17 +185,17 @@ func PrintOneStatement(stmt *Statement, indent int) {
 
 	switch stmt.stmtType {
 	case StmtAssignment:
-		PrintAssignementStmt(stmt.assignmentStmt, indent + 1)
+		PrintAssignmentStmt(stmt.assignmentStmt, indent + 1)
 	case StmtIf:
-		PrintIfStmt(stmt.ifStmt, indent + 1)
+		// PrintIfStmt(stmt.ifStmt, indent + 1)
 	case StmtLoop:
-		PrintLoopStmt(stmt.loopStmt, indent + 1)
+		// PrintLoopStmt(stmt.loopStmt, indent + 1)
 	case StmtPrint:
-		PrintPrintStmt(stmt.printStmt, indent + 1)
+		// PrintPrintStmt(stmt.printStmt, indent + 1)
 	}
 }
 
-func PrintAssignmentStmt(assign AssignmentStatement, indent int) {
+func PrintAssignmentStmt(assign *AssignmentStatement, indent int) {
 	printIndent(indent)
 	fmt.Printf("Assignment\n")
 
@@ -200,7 +205,90 @@ func PrintAssignmentStmt(assign AssignmentStatement, indent int) {
 }
 
 func PrintExpression(exprn *Expression, indent int) {
+	printIndent(indent)
+	fmt.Printf("Expression\n")
 
+	switch exprn.exprnType {
+	case ExprnBoolean:
+		PrintBooleanExpression(exprn.boolExpression, indent + 1)
+	case ExprnInteger:
+		// PrintIntegerExpression(exprn.intExpression, indent + 1)
+	case ExprnString:
+		// PrintStringExpression(exprn.stringExpression, indent + 1)
+	}
+}
+
+func PrintBooleanExpression(exprn *BoolExpression, indent int) {
+	printIndent(indent)
+	fmt.Printf("Boolean Expression\n")
+
+	PrintOrTerms(exprn.boolOrTerms, indent)
+}
+
+func PrintOrTerms(orTerms []*BoolTerm, indent int) {
+	printIndent(indent)
+	fmt.Printf("Or Terms\n")
+
+	for i, term := range orTerms {
+		PrintTerm(i, term, indent + 1)
+	}
+}
+
+func PrintTerm(i int, term *BoolTerm, indent int) {
+	printIndent(indent)
+	fmt.Printf("[%d]: term\n")
+
+	PrintAndFactors(term.boolAndFactors, indent + 1)
+}
+
+func PrintAndFactors(andFactors []*BoolFactor, indent int) {
+	printIndent(indent)
+
+	fmt.Printf("And Factors\n")
+
+	for i, factor := range andFactors {
+		PrintFactor(i, factor, indent + 1)
+	}
+}
+
+func PrintFactor(i int, factor *BoolFactor, indent int) {
+	printIndent(indent)
+	fmt.Printf("[%d]: factor\n", i)
+
+	switch(factor.boolFactorType) {
+	case BoolFactorNot:
+		PrintNotFactor(i, factor.notBoolFactor, indent + 1)
+	case BoolFactorConst:
+		PrintConstFactor(factor.boolConst, indent + 1)
+	case BoolFactorId:
+		PrintIdFactor(factor.boolIdentifier, indent + 1)
+	case BoolFactorBracket:
+		PrintBracketFactor(factor.bracketedExprn, indent + 1)
+	}
+}
+
+func PrintNotFactor(i int, factor *BoolFactor, indent int) {
+	printIndent(indent)
+	fmt.Printf("Not factor\n")
+
+	PrintFactor(i, factor.notBoolFactor, indent + 1)
+}
+
+func PrintBracketFactor(exprn *BoolExpression, indent int) {
+	printIndent(indent)
+	fmt.Printf("Bracket expression\n")
+
+	PrintBooleanExpression(exprn, indent + 1)
+}
+
+func PrintConstFactor(boolConst bool, indent int) {
+	printIndent(indent)
+	fmt.Printf("Const factor: %b\n", boolConst)
+}
+
+func PrintIdFactor(id string, indent int) {
+	printIndent(indent)
+	fmt.Printf("Id factor: %s\n", id)
 }
 
 func (parser *Parser) ParseProgram() (prog *Program, err error) {
