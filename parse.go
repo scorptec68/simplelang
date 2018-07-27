@@ -4,8 +4,7 @@ import (
 	"errors"
 	"strconv"
 	"fmt"
-	"go/parser"
-)
+	)
 
 type ValueType int
 type StatementType int
@@ -111,10 +110,10 @@ func (p *Parser) nextItem() item {
 	return p.token[p.peekCount]
 }
 
-func (parser *Parser) match(itemTyp itemType) (err error) {
+func (parser *Parser) match(itemTyp itemType, context string) (err error) {
 	item := parser.nextItem()
 	if item.typ != itemTyp {
-		return fmt.Errorf("Expecting %s", itemTyp
+		return fmt.Errorf("Expecting %v in %s", itemTyp, context)
 	}
     return nil
 }
@@ -158,7 +157,7 @@ func printIndent(indent int) {
 	}
 }
 
-func PrintProgramIndent(prog *Program, indent int) {
+func PrintProgram(prog *Program, indent int) {
 	printIndent(indent)
 	fmt.Printf("Program\n")
 	PrintVariables(prog.variables, indent + 1)
@@ -168,7 +167,7 @@ func PrintProgramIndent(prog *Program, indent int) {
 func PrintVariables(vars *Variables, indent int) {
 	printIndent(indent)
 	fmt.Printf("Variables\n")
-	fmt.Printf("%v", vars.values)
+	fmt.Printf("%v\n", vars.values)
 }
 
 func PrintStatementList(stmtList []*Statement, indent int) {
@@ -236,7 +235,7 @@ func PrintOrTerms(orTerms []*BoolTerm, indent int) {
 
 func PrintTerm(i int, term *BoolTerm, indent int) {
 	printIndent(indent)
-	fmt.Printf("[%d]: term\n")
+	fmt.Printf("[%d]: term\n", i)
 
 	PrintAndFactors(term.boolAndFactors, indent + 1)
 }
@@ -283,7 +282,7 @@ func PrintBracketFactor(exprn *BoolExpression, indent int) {
 
 func PrintConstFactor(boolConst bool, indent int) {
 	printIndent(indent)
-	fmt.Printf("Const factor: %b\n", boolConst)
+	fmt.Printf("Const factor: %t\n", boolConst)
 }
 
 func PrintIdFactor(id string, indent int) {
@@ -291,7 +290,14 @@ func PrintIdFactor(id string, indent int) {
 	fmt.Printf("Id factor: %s\n", id)
 }
 
+func NewParser(l *lexer) *Parser {
+	return &Parser{
+		lex: l,
+	}
+}
+
 func (parser *Parser) ParseProgram() (prog *Program, err error) {
+	prog = new(Program)
 	prog.variables, err = parser.parseVariables()
 	if err != nil {
 		return nil, err
@@ -318,6 +324,7 @@ func (parser *Parser) ParseProgram() (prog *Program, err error) {
 }
 
 func (parser *Parser) parseVariables() (vars *Variables, err error) {
+	vars = new(Variables)
     vars.values = make(map[string]*Value)
 
     item := parser.nextItem()
@@ -327,12 +334,21 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
     	return vars, nil
 	}
 
+	err = parser.match(itemNewLine, "Var start")
+	if err != nil {
+		return nil, err
+	}
+
 	// we have potentially some variables (could be empty)
 	for {
 		item = parser.nextItem()
 		switch item.typ {
 		case itemEndVar:
 			// end of variable declaration
+			err = parser.match(itemNewLine, "Var End")
+			if err != nil {
+				return nil, err
+			}
 			return vars, nil
 		case itemEOF:
 			// end of any input which is an error
@@ -341,7 +357,7 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 		case itemIdentifier:
             idStr := item.val
 
-            err = parser.match(itemColon)
+            err = parser.match(itemColon, "Variable declaration")
             if err != nil {
             	return nil, err
 			}
@@ -351,8 +367,13 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 				return nil, err
 			}
 	        vars.values[idStr] = value
+
+			err = parser.match(itemNewLine, "Variable declaration")
+			if err != nil {
+				return nil, err
+			}
 		default:
-			return nil, fmt.Errorf("Unexpected type: %s", item.typ)
+			return nil, fmt.Errorf("Unexpected token: %s in variables section", item)
 		}
 	}
 	return vars, err
@@ -438,6 +459,7 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 // Note: other parsers use panic/recover instead of returning an error
 
 func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error) {
+	assign = new(AssignmentStatement)
 	idItem := parser.nextItem()
 	assign.identifier = idItem.val
 
@@ -498,6 +520,8 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 
 //<bool-expression>::=<bool-term>{<or><bool-term>}
 func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err error) {
+	boolExprn = new(BoolExpression)
+
 	// process 1st term
 	boolTerm, err := parser.parseBoolTerm()
 	if err != nil {
@@ -522,6 +546,8 @@ func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err erro
 
 //<bool-term>::=<bool-factor>{<and><bool-factor>}
 func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
+	boolTerm = new(BoolTerm)
+
 	// process 1st factor
 	boolFactor, err := parser.parseBoolFactor()
 	if err != nil {
@@ -546,6 +572,8 @@ func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
 
 //<bool-factor>::=<bool-constant>|<not><bool-factor>|(<bool-expression>)|<int-comparison>
 func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
+	boolFactor = new(BoolFactor)
+
     item := parser.nextItem()
     switch item.typ {
 	case itemTrue:
@@ -632,6 +660,20 @@ type Value struct {
 	boolVal bool
 }
 
+func (v *Value)String() string {
+	switch v.valueType {
+	case ValueBoolean:
+		return fmt.Sprintf("<Boolean: %t>", v.boolVal)
+	case ValueInteger:
+		return fmt.Sprintf("<Integer: %d>", v.intVal)
+	case ValueString:
+		return fmt.Sprintf("<String: %s>", v.stringVal)
+	case ValueNone:
+		return "<none>"
+	}
+    return "<unknown>"
+}
+
 type Statement struct {
 	stmtType StatementType
 
@@ -711,7 +753,7 @@ type BoolFactor struct {
 
 type IntComparison struct {
 	// integer comparisons: <, >, <=, >=, =
-	intComparitor IntComparatorType
+	intComparator IntComparatorType
 
 	lhsIntExpression *IntExpression
 	rhsIntExpression *IntExpression

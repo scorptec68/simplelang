@@ -322,10 +322,12 @@ func processWhitespace(l *lexer) bool {
 		case eof:
 			return false
 		case '\n':
-			if !isBinaryOperator(l.prevItemType) {
+			if !isBinaryOperator(l.prevItemType) && l.prevItemType != itemNewLine && l.line > 2 {
 				l.emit(itemNewLine)
 			}
 			// otherwise binary operator prior to end of line continue to nextItem line
+			// OR multiple new lines
+			// OR new line at start of file
 		}
 
 		if !strings.ContainsRune(spaceChars, rune) {
