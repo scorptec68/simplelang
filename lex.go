@@ -29,6 +29,28 @@ func (i item) String() string {
 	return fmt.Sprintf("%q (type %d)", i.val, i.typ)
 }
 
+func (t itemType) String() string {
+	// lookup others
+    str := others[t]
+    if str != "" {
+    	return str
+	}
+	// lookup keywords
+	for key, value := range keywords {
+	    if value == t {
+	    	return key
+		}
+	}
+	// lookup symbols
+	for key, value := range symbols {
+		if value == t {
+			return key
+		}
+	}
+	// else just number
+	return fmt.Sprintf("%d", t)
+}
+
 // itemType identifies the type of lex items.
 type (
 	itemType int
@@ -87,6 +109,16 @@ const (
 	itemNone
 )
 
+var others = map[itemType] string{
+	itemError:          "error",
+	itemIntegerLiteral: "int literal",
+	itemStringLiteral:  "string literal",
+	itemNewLine:        "new line",
+	itemEOF:            "EOF",
+	itemIdentifier:     "identifier",
+	itemNone:           "none",
+}
+
 var keywords = map[string]itemType{
 	"var":      itemVar,
 	"endvar":   itemEndVar,
@@ -125,6 +157,7 @@ var symbols = map[string]itemType {
 	"(":        itemLeftParen,
 	")":        itemRightParen,
 }
+
 
 type processFn func(*lexer) processResult
 

@@ -12,7 +12,9 @@ func ExampleParse1() {
     endvar
 
     run
-       x = true
+       //x = true
+       //y = true | false
+	   y = x & (b | false)
     endrun`
 
 	l := lex("test", inputStr)

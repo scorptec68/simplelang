@@ -100,20 +100,21 @@ type Parser struct {
 
 //-------------------------------------------------------------------------------
 
-// nextItem returns the nextItem token.
+// nextItem returns the nextItem token from lexer or saved from peeking.
 func (p *Parser) nextItem() item {
 	if p.peekCount > 0 {
 		p.peekCount--
 	} else {
 		p.token[0] = p.lex.nextItem()
 	}
+fmt.Println("-> token: ", p.token[p.peekCount])
 	return p.token[p.peekCount]
 }
 
 func (parser *Parser) match(itemTyp itemType, context string) (err error) {
 	item := parser.nextItem()
 	if item.typ != itemTyp {
-		return fmt.Errorf("Expecting %v in %s", itemTyp, context)
+		return fmt.Errorf("Expecting %v in %s at line %d but got %v", itemTyp, context, item.line, item.typ)
 	}
     return nil
 }
@@ -458,6 +459,7 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 		return nil, fmt.Errorf("Missing leading statement token. Got %v", item)
 	}
 
+    // expect a new line marker for each statement
 	err = parser.match(itemNewLine, "statement")
 	if err != nil {
 		return nil, err
@@ -531,18 +533,23 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err error) {
 	boolExprn = new(BoolExpression)
 
+fmt.Println("wow 0")
 	// process 1st term
 	boolTerm, err := parser.parseBoolTerm()
 	if err != nil {
 		return nil, errors.New("Error parsing boolean term")
 	}
 	boolExprn.boolOrTerms = append(boolExprn.boolOrTerms, boolTerm)
+fmt.Println("wow 1")
+PrintBooleanExpression(boolExprn, 1)
+fmt.Println("item = ", parser.peek())
 
 	// optionally process others
-	for parser.peek().typ != itemNewLine {
-		item := parser.nextItem()
-		if item.typ != itemOr {
-			return nil, errors.New("Missing or term")
+	for parser.peek().typ == itemOr {
+fmt.Println("wow 2")
+		err = parser.match(itemOr, "Boolean Expression")
+		if err != nil {
+			return nil, err
 		}
 		boolTerm, err = parser.parseBoolTerm()
 		if err != nil {
@@ -565,10 +572,10 @@ func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
 	boolTerm.boolAndFactors = append(boolTerm.boolAndFactors, boolFactor)
 
 	// optionally process others
-	for parser.peek().typ != itemNewLine {
-		item := parser.nextItem()
-		if item.typ != itemAnd {
-			return nil, errors.New("Missing and factor")
+	for parser.peek().typ == itemAnd {
+		err = parser.match(itemAnd, "Boolean Term")
+		if err != nil {
+			return nil, err
 		}
 		boolFactor, err = parser.parseBoolFactor()
 		if err != nil {
@@ -585,6 +592,9 @@ func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 
     item := parser.nextItem()
     switch item.typ {
+	case itemIdentifier:
+		boolFactor.boolFactorType = BoolFactorId
+		boolFactor.boolIdentifier = item.val
 	case itemTrue:
 		boolFactor.boolFactorType = BoolFactorConst
 		boolFactor.boolConst = true
@@ -605,9 +615,10 @@ func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 			return nil, errors.New("Can not process bracketed expression")
 		}
 		boolFactor.bracketedExprn = exprn
-		item = parser.nextItem()
-		if item.typ != itemRightParen {
-			return nil, errors.New("Missing right parenthesis on exxpression")
+
+		err = parser.match(itemRightParen, "Bracketed expression")
+		if err != nil {
+			return nil, err
 		}
 	default:
 		return nil, errors.New("Invalid boolean factor")
