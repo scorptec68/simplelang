@@ -180,7 +180,7 @@ func PrintStatementList(stmtList []*Statement, indent int) {
 
 func PrintOneStatement(stmt *Statement, indent int) {
 	printIndent(indent)
-	fmt.Printf("Statement\n")
+	fmt.Printf("Statement (%v)\n", stmt.stmtType)
 
 	switch stmt.stmtType {
 	case StmtAssignment:
@@ -304,10 +304,14 @@ func (parser *Parser) ParseProgram() (prog *Program, err error) {
 	}
 	parser.variables = prog.variables
 
-	item := parser.nextItem()
-	if item.typ != itemRun {
-	    err := errors.New("Missing Run keyword")
-	    return nil, err
+	err = parser.match(itemRun, "program")
+	if err != nil {
+		return nil, err
+	}
+
+	err = parser.match(itemNewLine, "program")
+	if err != nil {
+		return nil, err
 	}
 
 	prog.stmtList, err = parser.parseStatementList()
@@ -315,9 +319,8 @@ func (parser *Parser) ParseProgram() (prog *Program, err error) {
 		return nil, err
 	}
 
-	item = parser.nextItem()
-	if item.typ != itemEndRun {
-		err := errors.New("Missing EndRun keyword")
+	err = parser.match(itemEndRun, "program")
+	if err != nil {
 		return nil, err
 	}
 	return prog, nil
@@ -451,6 +454,13 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 		stmtType = StmtPrint
 		printStmt, err = parser.parsePrintStatement()
 	*/
+	default:
+		return nil, fmt.Errorf("Missing leading statement token. Got %v", item)
+	}
+
+	err = parser.match(itemNewLine, "statement")
+	if err != nil {
+		return nil, err
 	}
 
 	return &Statement{stmtType, assignStmt, ifStmt, loopStmt, printStmt}, err
@@ -463,10 +473,9 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 	idItem := parser.nextItem()
 	assign.identifier = idItem.val
 
-	opItem := parser.nextItem()
-	if opItem.typ != itemEquals {
-	    err	= errors.New("Missing expected equals assign")
-	    return nil, err
+	err = parser.match(itemEquals, "Assignment")
+	if err != nil {
+		return nil, err
 	}
 
 	idType := parser.lookupType(assign.identifier)

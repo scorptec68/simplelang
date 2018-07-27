@@ -84,6 +84,7 @@ const (
 	itemEndVar   // endvar
 	itemRun      // run
 	itemEndRun   // endrun
+	itemNone
 )
 
 var keywords = map[string]itemType{
@@ -269,6 +270,7 @@ func lex(name, input string) *lexer {
 		input:      input,
 		items:      make(chan item),
 		line:       1,
+		prevItemType: itemNone,
 	}
 	go l.run()
 	return l
@@ -322,7 +324,7 @@ func processWhitespace(l *lexer) bool {
 		case eof:
 			return false
 		case '\n':
-			if !isBinaryOperator(l.prevItemType) && l.prevItemType != itemNewLine && l.line > 2 {
+			if !isBinaryOperator(l.prevItemType) && l.prevItemType != itemNewLine && l.prevItemType != itemNone {
 				l.emit(itemNewLine)
 			}
 			// otherwise binary operator prior to end of line continue to nextItem line
