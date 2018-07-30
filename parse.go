@@ -114,7 +114,7 @@ fmt.Println("-> token: ", p.token[p.peekCount])
 func (parser *Parser) match(itemTyp itemType, context string) (err error) {
 	item := parser.nextItem()
 	if item.typ != itemTyp {
-		return fmt.Errorf("Expecting %v in %s at line %d but got %v", itemTyp, context, item.line, item.typ)
+		return parser.Errorf("Expecting %v in %s but got \"%v\"", itemTyp, context, item.typ)
 	}
     return nil
 }
@@ -356,7 +356,7 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 			return vars, nil
 		case itemEOF:
 			// end of any input which is an error
-			err := errors.New("Cannot find EndVar")
+			err := parser.Errorf("Cannot find EndVar")
 			return nil, err
 		case itemIdentifier:
             idStr := item.val
@@ -377,7 +377,7 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 				return nil, err
 			}
 		default:
-			return nil, fmt.Errorf("Unexpected token: %s in variables section", item)
+			return nil, parser.Errorf("Unexpected token: %s in variables section", item)
 		}
 	}
 	return vars, err
@@ -386,7 +386,7 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 func (parser *Parser) parseValue() (value *Value, err error) {
 	item := parser.nextItem()
 	if !(item.typ == itemString || item.typ == itemBoolean || item.typ == itemInteger) {
-		err := errors.New("Expecting a variable type")
+		err := parser.Errorf("Expecting a variable type")
 		return nil, err
 	}
 	switch item.typ {
@@ -430,6 +430,12 @@ func (parser *Parser) parseStatementList() ([]*Statement, error) {
 	}
 }
 
+func (parser *Parser) Errorf(format string, a ...interface{}) error {
+	item := parser.token[0]
+	preamble := fmt.Sprintf("Error at line %d: ", item.line)
+	return errors.New(fmt.Sprintf(preamble + format, a...))
+}
+
 func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 	var stmtType StatementType
 
@@ -444,19 +450,31 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 		stmtType = StmtAssignment
 		parser.backup()
 		assignStmt, err = parser.parseAssignment()
+		if err !=  nil {
+			return nil, err
+		}
 	/*
 	case itemIf:
 		stmtType = StmtIf
 		ifStmt, err = parser.parseIfStatement()
+		if err !=  nil {
+			return nil, err
+		}
 	case itemLoop:
 		stmtType = StmtLoop
 		loopStmt, err = parser.parseLoopStatement()
+		if err !=  nil {
+			return nil, err
+		}
 	case itemPrint:
 		stmtType = StmtPrint
 		printStmt, err = parser.parsePrintStatement()
+		if err !=  nil {
+			return nil, err
+		}
 	*/
 	default:
-		return nil, fmt.Errorf("Missing leading statement token. Got %v", item)
+		return nil, parser.Errorf("Missing leading statement token. Got %v", item)
 	}
 
     // expect a new line marker for each statement
@@ -497,9 +515,8 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 	case ValueString:
 		// TODO
 		return assign, nil
-	default:
-		return nil, fmt.Errorf("Assignment to undeclared variable: %s", idItem.val)
 	}
+	return nil, parser.Errorf("Assignment to undeclared variable: %s", idItem.val)
 }
 
 //
@@ -537,7 +554,7 @@ fmt.Println("wow 0")
 	// process 1st term
 	boolTerm, err := parser.parseBoolTerm()
 	if err != nil {
-		return nil, errors.New("Error parsing boolean term")
+		return nil, parser.Errorf("Error parsing boolean term")
 	}
 	boolExprn.boolOrTerms = append(boolExprn.boolOrTerms, boolTerm)
 fmt.Println("wow 1")
@@ -553,7 +570,7 @@ fmt.Println("wow 2")
 		}
 		boolTerm, err = parser.parseBoolTerm()
 		if err != nil {
-			return nil, errors.New("Error parsing boolean term")
+			return nil, parser.Errorf("Error parsing boolean term")
 		}
 		boolExprn.boolOrTerms = append(boolExprn.boolOrTerms, boolTerm)
 	}
@@ -567,7 +584,7 @@ func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
 	// process 1st factor
 	boolFactor, err := parser.parseBoolFactor()
 	if err != nil {
-		return nil, errors.New("Error parsing boolean factor")
+		return nil, parser.Errorf("Error parsing boolean factor")
 	}
 	boolTerm.boolAndFactors = append(boolTerm.boolAndFactors, boolFactor)
 
@@ -579,7 +596,7 @@ func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
 		}
 		boolFactor, err = parser.parseBoolFactor()
 		if err != nil {
-			return nil, errors.New("Error parsing boolean term")
+			return nil, parser.Errorf("Error parsing boolean term")
 		}
 		boolTerm.boolAndFactors = append(boolTerm.boolAndFactors, boolFactor)
 	}
@@ -605,14 +622,14 @@ func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 		boolFactor.boolFactorType = BoolFactorNot
 		factor, err := parser.parseBoolFactor()
 		if err != nil {
-			return nil, errors.New("Not missing factor")
+			return nil, parser.Errorf("Not missing factor")
 		}
 		boolFactor.notBoolFactor = factor
 	case itemLeftParen:
 		boolFactor.boolFactorType = BoolFactorBracket
 		exprn, err := parser.parseBoolExpression()
 		if err != nil {
-			return nil, errors.New("Can not process bracketed expression")
+			return nil, parser.Errorf("Can not process bracketed expression")
 		}
 		boolFactor.bracketedExprn = exprn
 
@@ -621,7 +638,7 @@ func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 			return nil, err
 		}
 	default:
-		return nil, errors.New("Invalid boolean factor")
+		return nil, parser.Errorf("Invalid boolean factor")
 	}
 	return boolFactor, nil
 }

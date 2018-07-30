@@ -5,16 +5,18 @@ import "fmt"
 func ExampleParse1() {
 
 	// test input
-	inputStr := `
-    var
+	inputStr := `var
        x: boolean
        y: boolean
+       z: boolean
     endvar
 
     run
        //x = true
        //y = true | false
-	   y = x & (b | false)
+	   //y = x & (b | false)
+       //z = y & false | x & (y | true)
+       z = y & false | x & y | true)
     endrun`
 
 	l := lex("test", inputStr)
