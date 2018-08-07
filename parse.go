@@ -1,10 +1,9 @@
 package simple_language
 
 import (
-	"errors"
-	"strconv"
 	"fmt"
-	)
+	"strconv"
+)
 
 type ValueType int
 type StatementType int
@@ -20,16 +19,16 @@ type StringOperatorType int
 
 const (
 	ValueInteger ValueType = iota
-    ValueString
-    ValueBoolean
-    ValueNone
+	ValueString
+	ValueBoolean
+	ValueNone
 )
 
 const (
-    StmtLoop StatementType = iota
-    StmtIf
-    StmtAssignment
-    StmtPrint
+	StmtLoop StatementType = iota
+	StmtIf
+	StmtAssignment
+	StmtPrint
 )
 
 const (
@@ -39,10 +38,10 @@ const (
 )
 
 const (
-    ExprnIdentifier ExpressionType = iota
-    ExprnInteger
-    ExprnBoolean
-    ExprnString
+	ExprnIdentifier ExpressionType = iota
+	ExprnInteger
+	ExprnBoolean
+	ExprnString
 )
 
 const (
@@ -61,13 +60,12 @@ const (
 	IntBinaryOpDivide
 )
 
-
 const (
 	IntCompLessThan IntComparatorType = iota
 	IntCompGreaterThan
 	IntCompLessEquals
-    IntCompGreaterEquals
-    IntCompEquals
+	IntCompGreaterEquals
+	IntCompEquals
 )
 
 const (
@@ -83,7 +81,7 @@ const (
 
 type Program struct {
 	variables *Variables // ?? make sense in Program or in Parser??
-	stmtList []*Statement
+	stmtList  []*Statement
 }
 
 type Variables struct {
@@ -93,7 +91,7 @@ type Variables struct {
 type Parser struct {
 	variables *Variables
 
-	lex *lexer
+	lex       *lexer
 	token     [3]item // three-token lookahead for parser.
 	peekCount int
 }
@@ -101,14 +99,14 @@ type Parser struct {
 //-------------------------------------------------------------------------------
 
 // nextItem returns the nextItem token from lexer or saved from peeking.
-func (p *Parser) nextItem() item {
-	if p.peekCount > 0 {
-		p.peekCount--
+func (parser *Parser) nextItem() item {
+	if parser.peekCount > 0 {
+		parser.peekCount--
 	} else {
-		p.token[0] = p.lex.nextItem()
+		parser.token[0] = parser.lex.nextItem()
 	}
-fmt.Println("-> token: ", p.token[p.peekCount])
-	return p.token[p.peekCount]
+	fmt.Println("-> token: ", parser.token[parser.peekCount])
+	return parser.token[parser.peekCount]
 }
 
 func (parser *Parser) match(itemTyp itemType, context string) (err error) {
@@ -116,37 +114,37 @@ func (parser *Parser) match(itemTyp itemType, context string) (err error) {
 	if item.typ != itemTyp {
 		return parser.Errorf("Expecting %v in %s but got \"%v\"", itemTyp, context, item.typ)
 	}
-    return nil
+	return nil
 }
 
 // backup backs the input stream up one token.
-func (p *Parser) backup() {
-	p.peekCount++
+func (parser *Parser) backup() {
+	parser.peekCount++
 }
 
 // backup2 backs the input stream up two tokens.
 // The zeroth token is already there.
-func (p *Parser) backup2(t1 item) {
-	p.token[1] = t1
-	p.peekCount = 2
+func (parser *Parser) backup2(t1 item) {
+	parser.token[1] = t1
+	parser.peekCount = 2
 }
 
 // backup3 backs the input stream up three tokens
 // The zeroth token is already there.
-func (p *Parser) backup3(t2, t1 item) { // Reverse order: we're pushing back.
-	p.token[1] = t1
-	p.token[2] = t2
-	p.peekCount = 3
+func (parser *Parser) backup3(t2, t1 item) { // Reverse order: we're pushing back.
+	parser.token[1] = t1
+	parser.token[2] = t2
+	parser.peekCount = 3
 }
 
 // peek returns but does not consume the nextItem token.
-func (p *Parser) peek() item {
-	if p.peekCount > 0 {
-		return p.token[p.peekCount-1]
+func (parser *Parser) peek() item {
+	if parser.peekCount > 0 {
+		return parser.token[parser.peekCount-1]
 	}
-	p.peekCount = 1
-	p.token[0] = p.lex.nextItem()
-	return p.token[0]
+	parser.peekCount = 1
+	parser.token[0] = parser.lex.nextItem()
+	return parser.token[0]
 }
 
 //-------------------------------------------------------------------------------
@@ -161,8 +159,8 @@ func printIndent(indent int) {
 func PrintProgram(prog *Program, indent int) {
 	printIndent(indent)
 	fmt.Printf("Program\n")
-	PrintVariables(prog.variables, indent + 1)
-	PrintStatementList(prog.stmtList, indent + 1)
+	PrintVariables(prog.variables, indent+1)
+	PrintStatementList(prog.stmtList, indent+1)
 }
 
 func PrintVariables(vars *Variables, indent int) {
@@ -173,21 +171,21 @@ func PrintVariables(vars *Variables, indent int) {
 
 func PrintStatementList(stmtList []*Statement, indent int) {
 	printIndent(indent)
-    fmt.Printf("StatementList\n")
-    for _, stmt := range stmtList {
-    	PrintOneStatement(stmt, indent + 1)
+	fmt.Printf("StatementList\n")
+	for _, stmt := range stmtList {
+		PrintOneStatement(stmt, indent+1)
 	}
 }
 
 func PrintOneStatement(stmt *Statement, indent int) {
 	printIndent(indent)
-	fmt.Printf("Statement (%v)\n", stmt.stmtType)
+	fmt.Printf("Statement (type code: %v)\n", stmt.stmtType)
 
 	switch stmt.stmtType {
 	case StmtAssignment:
-		PrintAssignmentStmt(stmt.assignmentStmt, indent + 1)
+		PrintAssignmentStmt(stmt.assignmentStmt, indent+1)
 	case StmtIf:
-		// PrintIfStmt(stmt.ifStmt, indent + 1)
+		PrintIfStmt(stmt.ifStmt, indent+1)
 	case StmtLoop:
 		// PrintLoopStmt(stmt.loopStmt, indent + 1)
 	case StmtPrint:
@@ -201,7 +199,43 @@ func PrintAssignmentStmt(assign *AssignmentStatement, indent int) {
 
 	printIndent(indent)
 	fmt.Printf("lhs var = %s\n", assign.identifier)
-	PrintExpression(assign.exprn, indent + 1)
+	PrintExpression(assign.exprn, indent+1)
+}
+
+func PrintIfStmt(ifStmt *IfStatement, indent int) {
+	printIndent(indent)
+	fmt.Printf("If Statement\n")
+
+	printIndent(indent)
+	fmt.Printf("predicate\n")
+	PrintBooleanExpression(ifStmt.boolExpression, indent+1)
+
+	printIndent(indent)
+	fmt.Printf("if stmts\n")
+	PrintStatementList(ifStmt.stmtList, indent+1)
+
+	// print the elseif parts
+	for i, elseif := range ifStmt.elsifList {
+		printIndent(indent + 1)
+		fmt.Printf("[%d] elsif\n", i)
+		printElseIfStmt(elseif, indent+1)
+	}
+
+	if len(ifStmt.elseStmtList) > 0 {
+		printIndent(indent)
+		fmt.Printf("else stmts\n")
+		PrintStatementList(ifStmt.elseStmtList, indent+1)
+	}
+}
+
+func printElseIfStmt(elseif *ElseIf, indent int) {
+	printIndent(indent)
+	fmt.Printf("elsif expression\n")
+	PrintBooleanExpression(elseif.boolExpression, indent+1)
+
+	printIndent(indent)
+	fmt.Printf("elsif stmts\n")
+	PrintStatementList(elseif.stmtList, indent+1)
 }
 
 func PrintExpression(exprn *Expression, indent int) {
@@ -210,7 +244,7 @@ func PrintExpression(exprn *Expression, indent int) {
 
 	switch exprn.exprnType {
 	case ExprnBoolean:
-		PrintBooleanExpression(exprn.boolExpression, indent + 1)
+		PrintBooleanExpression(exprn.boolExpression, indent+1)
 	case ExprnInteger:
 		// PrintIntegerExpression(exprn.intExpression, indent + 1)
 	case ExprnString:
@@ -230,7 +264,7 @@ func PrintOrTerms(orTerms []*BoolTerm, indent int) {
 	fmt.Printf("Or Terms\n")
 
 	for i, term := range orTerms {
-		PrintTerm(i, term, indent + 1)
+		PrintTerm(i, term, indent+1)
 	}
 }
 
@@ -238,7 +272,7 @@ func PrintTerm(i int, term *BoolTerm, indent int) {
 	printIndent(indent)
 	fmt.Printf("[%d]: term\n", i)
 
-	PrintAndFactors(term.boolAndFactors, indent + 1)
+	PrintAndFactors(term.boolAndFactors, indent+1)
 }
 
 func PrintAndFactors(andFactors []*BoolFactor, indent int) {
@@ -247,7 +281,7 @@ func PrintAndFactors(andFactors []*BoolFactor, indent int) {
 	fmt.Printf("And Factors\n")
 
 	for i, factor := range andFactors {
-		PrintFactor(i, factor, indent + 1)
+		PrintFactor(i, factor, indent+1)
 	}
 }
 
@@ -255,15 +289,15 @@ func PrintFactor(i int, factor *BoolFactor, indent int) {
 	printIndent(indent)
 	fmt.Printf("[%d]: factor\n", i)
 
-	switch(factor.boolFactorType) {
+	switch factor.boolFactorType {
 	case BoolFactorNot:
-		PrintNotFactor(i, factor.notBoolFactor, indent + 1)
+		PrintNotFactor(i, factor.notBoolFactor, indent+1)
 	case BoolFactorConst:
-		PrintConstFactor(factor.boolConst, indent + 1)
+		PrintConstFactor(factor.boolConst, indent+1)
 	case BoolFactorId:
-		PrintIdFactor(factor.boolIdentifier, indent + 1)
+		PrintIdFactor(factor.boolIdentifier, indent+1)
 	case BoolFactorBracket:
-		PrintBracketFactor(factor.bracketedExprn, indent + 1)
+		PrintBracketFactor(factor.bracketedExprn, indent+1)
 	}
 }
 
@@ -271,14 +305,14 @@ func PrintNotFactor(i int, factor *BoolFactor, indent int) {
 	printIndent(indent)
 	fmt.Printf("Not factor\n")
 
-	PrintFactor(i, factor.notBoolFactor, indent + 1)
+	PrintFactor(i, factor.notBoolFactor, indent+1)
 }
 
 func PrintBracketFactor(exprn *BoolExpression, indent int) {
 	printIndent(indent)
 	fmt.Printf("Bracket expression\n")
 
-	PrintBooleanExpression(exprn, indent + 1)
+	PrintBooleanExpression(exprn, indent+1)
 }
 
 func PrintConstFactor(boolConst bool, indent int) {
@@ -329,13 +363,13 @@ func (parser *Parser) ParseProgram() (prog *Program, err error) {
 
 func (parser *Parser) parseVariables() (vars *Variables, err error) {
 	vars = new(Variables)
-    vars.values = make(map[string]*Value)
+	vars.values = make(map[string]*Value)
 
-    item := parser.nextItem()
-    if item.typ != itemVar {
-    	// no variables to process
+	item := parser.nextItem()
+	if item.typ != itemVar {
+		// no variables to process
 		parser.backup()
-    	return vars, nil
+		return vars, nil
 	}
 
 	err = parser.match(itemNewLine, "Var start")
@@ -359,18 +393,18 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 			err := parser.Errorf("Cannot find EndVar")
 			return nil, err
 		case itemIdentifier:
-            idStr := item.val
+			idStr := item.val
 
-            err = parser.match(itemColon, "Variable declaration")
-            if err != nil {
-            	return nil, err
+			err = parser.match(itemColon, "Variable declaration")
+			if err != nil {
+				return nil, err
 			}
 
 			value, err := parser.parseValue()
 			if err != nil {
 				return nil, err
 			}
-	        vars.values[idStr] = value
+			vars.values[idStr] = value
 
 			err = parser.match(itemNewLine, "Variable declaration")
 			if err != nil {
@@ -380,7 +414,6 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 			return nil, parser.Errorf("Unexpected token: %s in variables section", item)
 		}
 	}
-	return vars, err
 }
 
 func (parser *Parser) parseValue() (value *Value, err error) {
@@ -411,7 +444,7 @@ func (parser *Parser) lookupType(id string) ValueType {
 }
 
 func isEndKeyword(i item) bool {
-	return i.typ == itemEndRun || i.typ == itemEndLoop || i.typ == itemEndIf;
+	return i.typ == itemEndRun || i.typ == itemEndLoop || i.typ == itemEndIf
 
 }
 
@@ -433,7 +466,8 @@ func (parser *Parser) parseStatementList() ([]*Statement, error) {
 func (parser *Parser) Errorf(format string, a ...interface{}) error {
 	item := parser.token[0]
 	preamble := fmt.Sprintf("Error at line %d: ", item.line)
-	return errors.New(fmt.Sprintf(preamble + format, a...))
+	return fmt.Errorf(preamble+format, a...)
+	//return errors.New(fmt.Sprintf(preamble+format, a...))
 }
 
 func (parser *Parser) parseStatement() (stmt *Statement, err error) {
@@ -444,40 +478,40 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 	var loopStmt *LoopStatement
 	var printStmt *PrintStatement
 
-    item := parser.nextItem()
-    switch item.typ {
+	item := parser.nextItem()
+	switch item.typ {
 	case itemIdentifier:
 		stmtType = StmtAssignment
 		parser.backup()
 		assignStmt, err = parser.parseAssignment()
-		if err !=  nil {
+		if err != nil {
 			return nil, err
 		}
-	/*
 	case itemIf:
 		stmtType = StmtIf
 		ifStmt, err = parser.parseIfStatement()
-		if err !=  nil {
+		if err != nil {
 			return nil, err
 		}
-	case itemLoop:
-		stmtType = StmtLoop
-		loopStmt, err = parser.parseLoopStatement()
-		if err !=  nil {
-			return nil, err
-		}
-	case itemPrint:
-		stmtType = StmtPrint
-		printStmt, err = parser.parsePrintStatement()
-		if err !=  nil {
-			return nil, err
-		}
+	/*
+		case itemLoop:
+			stmtType = StmtLoop
+			loopStmt, err = parser.parseLoopStatement()
+			if err !=  nil {
+				return nil, err
+			}
+		case itemPrint:
+			stmtType = StmtPrint
+			printStmt, err = parser.parsePrintStatement()
+			if err !=  nil {
+				return nil, err
+			}
 	*/
 	default:
 		return nil, parser.Errorf("Missing leading statement token. Got %v", item)
 	}
 
-    // expect a new line marker for each statement
+	// expect a new line marker for each statement
 	err = parser.match(itemNewLine, "statement")
 	if err != nil {
 		return nil, err
@@ -487,6 +521,72 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 }
 
 // Note: other parsers use panic/recover instead of returning an error
+
+// Grammar
+// <if> ::= if <bool-expression> \n {<statement>}
+//    {elseif <bool-expression> \n {<statement>}} [else \n {<statement>}] endif \n
+//
+func (parser *Parser) parseIfStatement() (ifStmt *IfStatement, err error) {
+	ifStmt = new(IfStatement)
+
+	ifStmt.boolExpression, err = parser.parseBoolExpression()
+	if err != nil {
+		return nil, err
+	}
+	err = parser.match(itemNewLine, "if statement")
+	if err != nil {
+		return nil, err
+	}
+	ifStmt.stmtList, err = parser.parseStatementList()
+	if err != nil {
+		return nil, err
+	}
+	for {
+		item := parser.nextItem()
+		switch item.typ {
+		case itemElseIf:
+			elseIf, err := parser.parseElseIf()
+			if err != nil {
+				return nil, err
+			}
+			ifStmt.elsifList = append(ifStmt.elsifList, elseIf)
+		case itemElse:
+			err = parser.match(itemNewLine, "else")
+			if err != nil {
+				return nil, err
+			}
+			ifStmt.elseStmtList, err = parser.parseStatementList()
+			if err != nil {
+				return nil, err
+			}
+		case itemEndIf:
+			return ifStmt, nil
+		default:
+			return nil, parser.Errorf("Bad token in if statement")
+		}
+	}
+
+}
+
+// grammar:
+//    elseif <bool-expression> \n {<statement>}
+//
+func (parser *Parser) parseElseIf() (elseIf *ElseIf, err error) {
+	elseIf = new(ElseIf)
+	elseIf.boolExpression, err = parser.parseBoolExpression()
+	if err != nil {
+		return nil, err
+	}
+	err = parser.match(itemNewLine, "elseif")
+	if err != nil {
+		return nil, err
+	}
+	elseIf.stmtList, err = parser.parseStatementList()
+	if err != nil {
+		return nil, err
+	}
+	return elseIf, nil
+}
 
 func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error) {
 	assign = new(AssignmentStatement)
@@ -550,20 +650,20 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err error) {
 	boolExprn = new(BoolExpression)
 
-fmt.Println("wow 0")
+	fmt.Println("wow 0")
 	// process 1st term
 	boolTerm, err := parser.parseBoolTerm()
 	if err != nil {
 		return nil, parser.Errorf("Error parsing boolean term")
 	}
 	boolExprn.boolOrTerms = append(boolExprn.boolOrTerms, boolTerm)
-fmt.Println("wow 1")
-PrintBooleanExpression(boolExprn, 1)
-fmt.Println("item = ", parser.peek())
+	fmt.Println("wow 1")
+	PrintBooleanExpression(boolExprn, 1)
+	fmt.Println("item = ", parser.peek())
 
 	// optionally process others
 	for parser.peek().typ == itemOr {
-fmt.Println("wow 2")
+		fmt.Println("wow 2")
 		err = parser.match(itemOr, "Boolean Expression")
 		if err != nil {
 			return nil, err
@@ -600,15 +700,15 @@ func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
 		}
 		boolTerm.boolAndFactors = append(boolTerm.boolAndFactors, boolFactor)
 	}
-    return boolTerm, err
+	return boolTerm, err
 }
 
 //<bool-factor>::=<bool-constant>|<not><bool-factor>|(<bool-expression>)|<int-comparison>
 func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 	boolFactor = new(BoolFactor)
 
-    item := parser.nextItem()
-    switch item.typ {
+	item := parser.nextItem()
+	switch item.typ {
 	case itemIdentifier:
 		boolFactor.boolFactorType = BoolFactorId
 		boolFactor.boolIdentifier = item.val
@@ -692,12 +792,12 @@ func (parser *Parser) parseIfStatement() (ifStmt *IfStatement, err error) {
 type Value struct {
 	valueType ValueType
 
-	intVal int
+	intVal    int
 	stringVal string
-	boolVal bool
+	boolVal   bool
 }
 
-func (v *Value)String() string {
+func (v *Value) String() string {
 	switch v.valueType {
 	case ValueBoolean:
 		return fmt.Sprintf("<Boolean: %t>", v.boolVal)
@@ -708,41 +808,41 @@ func (v *Value)String() string {
 	case ValueNone:
 		return "<none>"
 	}
-    return "<unknown>"
+	return "<unknown>"
 }
 
 type Statement struct {
 	stmtType StatementType
 
 	assignmentStmt *AssignmentStatement
-	ifStmt   *IfStatement
-	loopStmt *LoopStatement
-	printStmt *PrintStatement
+	ifStmt         *IfStatement
+	loopStmt       *LoopStatement
+	printStmt      *PrintStatement
 }
 
 type LoopStatement struct {
 	loopType LoopType
 
-	intExpression *IntExpression
+	intExpression  *IntExpression
 	boolExpression *BoolExpression
-	stmtList []*Statement
+	stmtList       []*Statement
 }
 
 type IfStatement struct {
 	boolExpression *BoolExpression
-	stmtList []*Statement
-    elsifList []*ElseIf
-    elseStmtList []*Statement
+	stmtList       []*Statement
+	elsifList      []*ElseIf
+	elseStmtList   []*Statement
 }
 
 type ElseIf struct {
-	boolExpression BoolExpression
-	stmtList []*Statement
+	boolExpression *BoolExpression
+	stmtList       []*Statement
 }
 
 type AssignmentStatement struct {
 	identifier string
-	exprn *Expression
+	exprn      *Expression
 }
 
 type PrintStatement struct {
@@ -752,8 +852,8 @@ type PrintStatement struct {
 type Expression struct {
 	exprnType ExpressionType
 
-	intExpression *IntExpression
-	boolExpression *BoolExpression
+	intExpression    *IntExpression
+	boolExpression   *BoolExpression
 	stringExpression *StringExpression
 }
 
@@ -771,21 +871,23 @@ type BoolTerm struct {
 }
 
 type BoolFactorType int
+
 const (
 	BoolFactorConst BoolFactorType = iota
-    BoolFactorId
-    BoolFactorNot
-    BoolFactorBracket
-    BoolFactorIntComparison
+	BoolFactorId
+	BoolFactorNot
+	BoolFactorBracket
+	BoolFactorIntComparison
 )
-type BoolFactor struct {
-    boolFactorType BoolFactorType
 
-    boolConst bool
-    boolIdentifier string
-    notBoolFactor *BoolFactor
-    bracketedExprn *BoolExpression
-    intComparison IntComparison
+type BoolFactor struct {
+	boolFactorType BoolFactorType
+
+	boolConst      bool
+	boolIdentifier string
+	notBoolFactor  *BoolFactor
+	bracketedExprn *BoolExpression
+	intComparison  IntComparison
 }
 
 type IntComparison struct {
@@ -801,16 +903,17 @@ type IntComparison struct {
 //<int-factor>::=<int-constant>|<int-identifier>|<minus><int-factor>|(<int-expression>)
 
 type IntExpression struct {
-    plusTerms []*IntTerm
-    minusTerms []*IntTerm
+	plusTerms  []*IntTerm
+	minusTerms []*IntTerm
 }
 
 type IntTerm struct {
-    timesFactors []*IntFactor
-    divideFactors []*IntFactor
+	timesFactors  []*IntFactor
+	divideFactors []*IntFactor
 }
 
 type IntFactorType int
+
 const (
 	IntFactorConst IntFactorType = iota
 	IntFactorId
@@ -819,12 +922,12 @@ const (
 )
 
 type IntFactor struct {
-    intFactorType IntFactorType
+	intFactorType IntFactorType
 
-    intConst int
-    intIdentifier string
-    minusIntFactor *IntFactor
-    bracketedExprn *IntExpression
+	intConst       int
+	intIdentifier  string
+	minusIntFactor *IntFactor
+	bracketedExprn *IntExpression
 }
 
 // <string-expression> ::= <str-term> {<binary-str-operator> <str-term>}
@@ -838,16 +941,16 @@ type StringTermType int
 
 const (
 	StringTermValue = iota
-    StringTermId
-    StringTermBracket
-    StringTermStringedExprn
+	StringTermId
+	StringTermBracket
+	StringTermStringedExprn
 )
 
 type StringTerm struct {
 	strTermType StringTermType
 
-	strVal string
-	identifier string
+	strVal         string
+	identifier     string
 	bracketedExprn *StringExpression
-	stringedExprn *Expression
+	stringedExprn  *Expression
 }
