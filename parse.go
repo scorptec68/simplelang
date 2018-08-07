@@ -443,8 +443,9 @@ func (parser *Parser) lookupType(id string) ValueType {
 	return ValueNone
 }
 
-func isEndKeyword(i item) bool {
-	return i.typ == itemEndRun || i.typ == itemEndLoop || i.typ == itemEndIf
+func isStmtListEndKeyword(i item) bool {
+	return i.typ == itemEndRun || i.typ == itemEndLoop || i.typ == itemEndIf ||
+		i.typ == itemElse || i.typ == itemElseIf
 
 }
 
@@ -457,7 +458,7 @@ func (parser *Parser) parseStatementList() ([]*Statement, error) {
 		}
 		stmtList = append(stmtList, stmt)
 		item := parser.peek()
-		if isEndKeyword(item) {
+		if isStmtListEndKeyword(item) {
 			return stmtList, nil
 		}
 	}

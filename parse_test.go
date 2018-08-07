@@ -20,6 +20,13 @@ func ExampleParse1() {
 	   //z = (x | y & z) | (true & false | x)
 	   if x & y 
 		  z = y
+		  z = true
+	   elseif true
+	      z = x | y
+	   elseif x | true
+	      z = y
+	   else
+		  z = false
 	   endif
     endrun`
 
