@@ -111,6 +111,7 @@ func (parser *Parser) nextItem() item {
 
 func (parser *Parser) match(itemTyp itemType, context string) (err error) {
 	item := parser.nextItem()
+	fmt.Printf("-> matching on item: %v, got token: %v\n", itemTyp, item)
 	if item.typ != itemTyp {
 		return parser.Errorf("Expecting %v in %s but got \"%v\"", itemTyp, context, item.typ)
 	}
@@ -187,7 +188,7 @@ func PrintOneStatement(stmt *Statement, indent int) {
 	case StmtIf:
 		PrintIfStmt(stmt.ifStmt, indent+1)
 	case StmtLoop:
-		// PrintLoopStmt(stmt.loopStmt, indent + 1)
+		PrintLoopStmt(stmt.loopStmt, indent+1)
 	case StmtPrint:
 		// PrintPrintStmt(stmt.printStmt, indent + 1)
 	}
@@ -226,6 +227,18 @@ func PrintIfStmt(ifStmt *IfStatement, indent int) {
 		fmt.Printf("else stmts\n")
 		PrintStatementList(ifStmt.elseStmtList, indent+1)
 	}
+}
+
+func PrintLoopStmt(loopStmt *LoopStatement, indent int) {
+	printIndent(indent)
+	fmt.Printf("Loop Statement (%v)\n", loopStmt.loopType)
+	switch loopStmt.loopType {
+	case LoopWhile:
+		PrintBooleanExpression(loopStmt.boolExpression, indent+1)
+	case LoopTimes:
+		//PrintIntExpression(loopStmt.intExpression, indent+1)
+	}
+	PrintStatementList(loopStmt.stmtList, indent+1)
 }
 
 func printElseIfStmt(elseif *ElseIf, indent int) {
@@ -494,13 +507,13 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 		if err != nil {
 			return nil, err
 		}
+	case itemLoop:
+		stmtType = StmtLoop
+		loopStmt, err = parser.parseLoopStatement()
+		if err != nil {
+			return nil, err
+		}
 	/*
-		case itemLoop:
-			stmtType = StmtLoop
-			loopStmt, err = parser.parseLoopStatement()
-			if err !=  nil {
-				return nil, err
-			}
 		case itemPrint:
 			stmtType = StmtPrint
 			printStmt, err = parser.parsePrintStatement()
@@ -512,16 +525,63 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 		return nil, parser.Errorf("Missing leading statement token. Got %v", item)
 	}
 
-	// expect a new line marker for each statement
-	err = parser.match(itemNewLine, "statement")
-	if err != nil {
-		return nil, err
-	}
-
 	return &Statement{stmtType, assignStmt, ifStmt, loopStmt, printStmt}, err
 }
 
 // Note: other parsers use panic/recover instead of returning an error
+
+// Grammar
+//	<loop> ::= loop \n {<statement>} endloop \n |
+//             loop times <int-expression> \n {<statement>} endloop \n |
+//             loop <bool-expression> \n {<statement>} endloop \n
+//
+func (parser *Parser) parseLoopStatement() (loopStmt *LoopStatement, err error) {
+	loopStmt = new(LoopStatement)
+
+	switch parser.peek().typ {
+	case itemNewLine:
+		// forever loop
+		// just statements and no conditional part of loop construct
+		loopStmt.loopType = LoopForever
+	case itemTimes:
+		parser.nextItem() // move over the "times" keyword
+		loopStmt.loopType = LoopTimes
+		//loopStmt.intExpression, err = parser.parseIntExpression()
+		if err != nil {
+			return nil, err
+		}
+
+	default:
+		// while loop
+		loopStmt.loopType = LoopWhile
+		loopStmt.boolExpression, err = parser.parseBoolExpression()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// now parse the newline and statement list...
+
+	err = parser.match(itemNewLine, "loop")
+	if err != nil {
+		return nil, err
+	}
+	loopStmt.stmtList, err = parser.parseStatementList()
+	if err != nil {
+		return nil, err
+	}
+
+	err = parser.match(itemEndLoop, "loop")
+	if err != nil {
+		return nil, err
+	}
+	err = parser.match(itemNewLine, "loop")
+	if err != nil {
+		return nil, err
+	}
+
+	return loopStmt, nil
+}
 
 // Grammar
 // <if> ::= if <bool-expression> \n {<statement>}
@@ -561,6 +621,10 @@ func (parser *Parser) parseIfStatement() (ifStmt *IfStatement, err error) {
 				return nil, err
 			}
 		case itemEndIf:
+			err = parser.match(itemNewLine, "if")
+			if err != nil {
+				return nil, err
+			}
 			return ifStmt, nil
 		default:
 			return nil, parser.Errorf("Bad token in if statement")
@@ -609,15 +673,22 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 		assign.exprn = new(Expression)
 		assign.exprn.exprnType = ExprnBoolean
 		assign.exprn.boolExpression = boolExprn
-		return assign, nil
 	case ValueInteger:
 		// TODO
 		return assign, nil
 	case ValueString:
 		// TODO
 		return assign, nil
+	default:
+		return nil, parser.Errorf("Assignment to undeclared variable: %s", idItem.val)
 	}
-	return nil, parser.Errorf("Assignment to undeclared variable: %s", idItem.val)
+
+	err = parser.match(itemNewLine, "assignment")
+	if err != nil {
+		return nil, err
+	}
+
+	return assign, nil
 }
 
 //
@@ -810,6 +881,18 @@ func (v *Value) String() string {
 		return "<none>"
 	}
 	return "<unknown>"
+}
+
+func (loopTyp LoopType) String() string {
+	switch loopTyp {
+	case LoopForever:
+		return "forever"
+	case LoopTimes:
+		return "times"
+	case LoopWhile:
+		return "while"
+	}
+	return "uknown loop"
 }
 
 type Statement struct {

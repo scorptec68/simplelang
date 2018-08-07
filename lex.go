@@ -31,14 +31,14 @@ func (i item) String() string {
 
 func (t itemType) String() string {
 	// lookup others
-    str := others[t]
-    if str != "" {
-    	return str
+	str := others[t]
+	if str != "" {
+		return str
 	}
 	// lookup keywords
 	for key, value := range keywords {
-	    if value == t {
-	    	return key
+		if value == t {
+			return key
 		}
 	}
 	// lookup symbols
@@ -53,63 +53,64 @@ func (t itemType) String() string {
 
 // itemType identifies the type of lex items.
 type (
-	itemType int
-	Pos int
+	itemType      int
+	Pos           int
 	processResult int
 )
 
 const (
-	resultMatch    processResult = iota
+	resultMatch processResult = iota
 	resultNoMatch
 	resultMatchError
 )
 
 const (
-	itemError        itemType = iota // error occurred; value is text of error
-	itemIntegerLiteral // integer value
-	itemStringLiteral  // quotable string
-	itemEquals        // '='
-	itemNotEquals     // '#'
-	itemLessEquals    // '<='
-	itemGreaterEquals // '>='
-	itemLessThan   // '<'
-	itemGreaterThan // '>'
-	itemAnd        // '&'
-	itemOr         // '|'
-	itemNot        // '~'
-	itemPlus       // '+'
-	itemMinus      // '-'
-	itemTimes      // '*'
-	itemDivide     // '/'
-	itemLeftParen  // '('
-	itemRightParen // ')'
-	itemColon      // ':'
-	itemNewLine    // '\n'
+	itemError          itemType = iota // error occurred; value is text of error
+	itemIntegerLiteral                 // integer value
+	itemStringLiteral                  // quotable string
+	itemEquals                         // '='
+	itemNotEquals                      // '#'
+	itemLessEquals                     // '<='
+	itemGreaterEquals                  // '>='
+	itemLessThan                       // '<'
+	itemGreaterThan                    // '>'
+	itemAnd                            // '&'
+	itemOr                             // '|'
+	itemNot                            // '~'
+	itemPlus                           // '+'
+	itemMinus                          // '-'
+	itemMultiply                       // '*'
+	itemDivide                         // '/'
+	itemLeftParen                      // '('
+	itemRightParen                     // ')'
+	itemColon                          // ':'
+	itemNewLine                        // '\n'
 	itemEOF
 	itemIdentifier // alphanumeric identifier
 	// Keywords appear after all the rest.
-	itemKeyword  // used only to delimit the keywords
-	itemIf       // if keyword
-	itemElse     // else keyword
-	itemElseIf   // elseif keyword
-	itemEndIf    // endif keyword
-	itemLoop     // loop keyword
-	itemEndLoop  // endloop keyword
-	itemPrint    // print keyword
-	itemStr      // str keyword
-	itemBoolean  // boolean keyword
-	itemString   // string keyword
-	itemInteger  // integer keyword
-	itemTrue     // true
-	itemFalse    // false
-	itemVar      // var
-	itemEndVar   // endvar
-	itemRun      // run
-	itemEndRun   // endrun
+	itemKeyword // used only to delimit the keywords
+	itemIf      // if keyword
+	itemElse    // else keyword
+	itemElseIf  // elseif keyword
+	itemEndIf   // endif keyword
+	itemLoop    // loop keyword
+	itemTimes   // times keyword
+	itemEndLoop // endloop keyword
+	itemPrint   // print keyword
+	itemStr     // str keyword
+	itemBoolean // boolean keyword
+	itemString  // string keyword
+	itemInteger // integer keyword
+	itemTrue    // true
+	itemFalse   // false
+	itemVar     // var
+	itemEndVar  // endvar
+	itemRun     // run
+	itemEndRun  // endrun
 	itemNone
 )
 
-var others = map[itemType] string{
+var others = map[itemType]string{
 	itemError:          "error",
 	itemIntegerLiteral: "int literal",
 	itemStringLiteral:  "string literal",
@@ -120,63 +121,62 @@ var others = map[itemType] string{
 }
 
 var keywords = map[string]itemType{
-	"var":      itemVar,
-	"endvar":   itemEndVar,
-	"run":      itemRun,
-	"endrun":   itemEndRun,
-	"if":       itemIf,
-	"else":     itemElse,
-	"elseif":   itemElseIf,
-	"endif":    itemEndIf,
-	"loop":     itemLoop,
-	"endloop":  itemEndLoop,
-	"print":    itemPrint,
-	"str":      itemStr,
-	"boolean":  itemBoolean,
-	"string":   itemString,
-	"integer":  itemInteger,
-	"true":     itemTrue,
-	"false":    itemFalse,
+	"var":     itemVar,
+	"endvar":  itemEndVar,
+	"run":     itemRun,
+	"endrun":  itemEndRun,
+	"if":      itemIf,
+	"else":    itemElse,
+	"elseif":  itemElseIf,
+	"endif":   itemEndIf,
+	"loop":    itemLoop,
+	"endloop": itemEndLoop,
+	"print":   itemPrint,
+	"str":     itemStr,
+	"boolean": itemBoolean,
+	"string":  itemString,
+	"integer": itemInteger,
+	"true":    itemTrue,
+	"false":   itemFalse,
+	"times":   itemTimes,
 }
 
-var symbols = map[string]itemType {
-	"<":        itemLessThan,
-	">":        itemGreaterThan,
-	"<=":       itemLessEquals,
-	">=":       itemGreaterEquals,
-	"=":        itemEquals,
-	"+":        itemPlus,
-	"-":        itemMinus,
-	"~":        itemNot,
-	"#":        itemNotEquals,
-	"*":        itemTimes,
-	"/":        itemDivide,
-	"&":        itemAnd,
-	"|":        itemOr,
-	":":        itemColon,
-	"(":        itemLeftParen,
-	")":        itemRightParen,
+var symbols = map[string]itemType{
+	"<":  itemLessThan,
+	">":  itemGreaterThan,
+	"<=": itemLessEquals,
+	">=": itemGreaterEquals,
+	"=":  itemEquals,
+	"+":  itemPlus,
+	"-":  itemMinus,
+	"~":  itemNot,
+	"#":  itemNotEquals,
+	"*":  itemMultiply,
+	"/":  itemDivide,
+	"&":  itemAnd,
+	"|":  itemOr,
+	":":  itemColon,
+	"(":  itemLeftParen,
+	")":  itemRightParen,
 }
-
 
 type processFn func(*lexer) processResult
 
-
 const (
-	eof = -1
-	spaceChars      = " \t\r\n" // These are the space characters defined by Go itself.
+	eof        = -1
+	spaceChars = " \t\r\n" // These are the space characters defined by Go itself.
 )
 
 // lexer holds the state of the scanner.
 type lexer struct {
-	name       string    // the name of the input; used only for error reports
-	input      string    // the string being scanned
-	pos        Pos       // current position in the input
-	start      Pos       // start position of this item
-	width      Pos       // width of last rune read from input
-	prevItemType itemType; // previous item
-	items      chan item // channel of scanned items
-	line       int       // 1+number of newlines seen
+	name         string    // the name of the input; used only for error reports
+	input        string    // the string being scanned
+	pos          Pos       // current position in the input
+	start        Pos       // start position of this item
+	width        Pos       // width of last rune read from input
+	prevItemType itemType  // previous item
+	items        chan item // channel of scanned items
+	line         int       // 1+number of newlines seen
 }
 
 //--------------------------------------------------------------------------------------------
@@ -275,7 +275,6 @@ func (l *lexer) emit(t itemType) {
 	l.start = l.pos
 }
 
-
 // errorf returns an error token
 func (l *lexer) errorf(format string, args ...interface{}) {
 	l.items <- item{itemError, l.start, fmt.Sprintf(format, args...), l.line}
@@ -299,10 +298,10 @@ func (l *lexer) drain() {
 // lex creates a new scanner for the input string.
 func lex(name, input string) *lexer {
 	l := &lexer{
-		name:       name,
-		input:      input,
-		items:      make(chan item),
-		line:       1,
+		name:         name,
+		input:        input,
+		items:        make(chan item),
+		line:         1,
 		prevItemType: itemNone,
 	}
 	go l.run()
@@ -314,14 +313,14 @@ var processFunctions = []processFn{processComment, processSymbol, processStringL
 
 // run runs lexer over the input
 func (l *lexer) run() {
-	mainLoop:
+mainLoop:
 	for {
 		if !processWhitespace(l) {
 			break
 		}
 		//fmt.Println("testing", string(l.peek()))
 		found := false
-		processLoop:
+	processLoop:
 		for _, processFunc := range processFunctions {
 			//fmt.Println("func =", processFunc)
 			result := processFunc(l)
@@ -342,7 +341,6 @@ func (l *lexer) run() {
 	l.emit(itemEOF)
 	close(l.items)
 }
-
 
 /*
  * Eat up any whitespace to the nextItem non-whitespace
@@ -381,7 +379,7 @@ func processWhitespace(l *lexer) bool {
 func processComment(l *lexer) processResult {
 	rune := l.next()
 	if rune == '/' {
-		rune := l.next();
+		rune := l.next()
 		if rune == '/' {
 			// eat up until \n
 			for l.next() != '\n' {
@@ -406,13 +404,13 @@ func processComment(l *lexer) processResult {
  */
 func processSymbol(l *lexer) processResult {
 	rune1 := l.next()
-    rune2 := l.next()
-    key1 := string(rune1)
-    key12 := string(rune1) + string(rune2)
-    if item, ok := symbols[key12]; ok {
-        l.emit(item)
-        return resultMatch
-	} else if item,ok := symbols[key1]; ok {
+	rune2 := l.next()
+	key1 := string(rune1)
+	key12 := string(rune1) + string(rune2)
+	if item, ok := symbols[key12]; ok {
+		l.emit(item)
+		return resultMatch
+	} else if item, ok := symbols[key1]; ok {
 		l.backup()
 		l.emit(item)
 		return resultMatch
@@ -424,7 +422,7 @@ func processSymbol(l *lexer) processResult {
 }
 
 func processStringLiteral(l *lexer) processResult {
-    if l.peek() != '"' {
+	if l.peek() != '"' {
 		return resultNoMatch
 	}
 
@@ -446,8 +444,8 @@ func processStringLiteral(l *lexer) processResult {
 func processNumericLiteral(l *lexer) processResult {
 	r := l.next()
 	if r != '+' && r != '-' && !('0' <= r && r <= '9') {
-	    l.backup()
-	    return resultNoMatch
+		l.backup()
+		return resultNoMatch
 	}
 
 	// Optional leading sign.
@@ -518,8 +516,6 @@ func processIdentifier(l *lexer) processResult {
 	}
 }
 
-
-
 // isSpace reports whether r is a space character.
 func isSpace(r rune) bool {
 	return r == ' ' || r == '\t'
@@ -540,7 +536,7 @@ func isAlpha(r rune) bool {
 }
 
 func isEndOfWord(r rune) bool {
-    return isSpace(r) || isEndOfLine(r) || r == eof
+	return isSpace(r) || isEndOfLine(r) || r == eof
 }
 
 func isBinaryOperator(t itemType) bool {
@@ -550,5 +546,5 @@ func isBinaryOperator(t itemType) bool {
 		return true
 	default:
 		return false
-    }
+	}
 }

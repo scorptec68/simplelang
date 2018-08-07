@@ -18,16 +18,19 @@ func ExampleParse1() {
        //z = y & false | x & (y | true)
 	   //z = y & false | x & y | true
 	   //z = (x | y & z) | (true & false | x)
-	   if x & y 
-		  z = y
-		  z = true
-	   elseif true
-	      z = x | y
-	   elseif x | true
-	      z = y
-	   else
-		  z = false
-	   endif
+	//    if x & y 
+	// 	  z = y
+	// 	  z = true
+	//    elseif true
+	//       z = x | y
+	//    elseif x | true
+	//       z = y
+	//    else
+	// 	  z = false
+	//    endif
+	    loop x & y
+		   x = true
+		endloop
     endrun`
 
 	l := lex("test", inputStr)
