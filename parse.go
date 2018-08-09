@@ -722,20 +722,15 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err error) {
 	boolExprn = new(BoolExpression)
 
-	fmt.Println("wow 0")
 	// process 1st term
 	boolTerm, err := parser.parseBoolTerm()
 	if err != nil {
 		return nil, parser.Errorf("Error parsing boolean term")
 	}
 	boolExprn.boolOrTerms = append(boolExprn.boolOrTerms, boolTerm)
-	fmt.Println("wow 1")
-	PrintBooleanExpression(boolExprn, 1)
-	fmt.Println("item = ", parser.peek())
 
 	// optionally process others
 	for parser.peek().typ == itemOr {
-		fmt.Println("wow 2")
 		err = parser.match(itemOr, "Boolean Expression")
 		if err != nil {
 			return nil, err
@@ -940,6 +935,34 @@ type Expression struct {
 	boolExpression   *BoolExpression
 	stringExpression *StringExpression
 }
+
+type IntExpression struct {
+	intPlusTerms  []*IntTerm
+	intMinusTerms []*IntTerm
+}
+
+type IntTerm struct {
+	intTimesFactors  []*IntFactor
+	intDivideFactors []*IntFactor
+}
+
+type IntFactor struct {
+	intFactorType IntFactorType
+
+	intConst       int
+	intIdentifier  string
+	minusIntFactor *IntFactor
+	bracketedExprn *IntExpression
+}
+
+type IntFactorType int
+
+const (
+	IntFactorConst IntFactorType = iota
+	IntFactorId
+	IntFactorMinus
+	IntFactorBracket
+)
 
 //<bool-expression>::=<bool-term>{<or><bool-term>}
 //<bool-term>::=<bool-factor>{<and><bool-factor>}

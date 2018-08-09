@@ -37,7 +37,7 @@ Example:
 		test = test - "r"
 		print(test)
 		
-		loop 10
+		loop times 10
 		    i = i + 1
 		endloop
 		
@@ -70,7 +70,7 @@ EBNF
     <int-comparison> ::= <int-expression> <int-comp> <int-expression>
     
     <int-expression> ::= <int-term> {<plus-or-minus> <int-term>}
-    <int-term> ::= <int-factor> {<times-or-divice> <int-factor>}
+    <int-term> ::= <int-factor> {<times-or-divide> <int-factor>}
     <int-factor> ::= <int-constant> | <identifier> | <unary-int-operator><int-factor> 
                       | <lparen><int-expression><rparen>
     
