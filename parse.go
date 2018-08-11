@@ -157,30 +157,31 @@ func printIndent(indent int) {
 	}
 }
 
-func PrintProgram(prog *Program, indent int) {
+func printfIndent(indent int, format string, a ...interface{}) {
 	printIndent(indent)
-	fmt.Printf("Program\n")
+	fmt.Printf(format, a...)
+}
+
+func PrintProgram(prog *Program, indent int) {
+	printfIndent(indent, "Program\n")
 	PrintVariables(prog.variables, indent+1)
 	PrintStatementList(prog.stmtList, indent+1)
 }
 
 func PrintVariables(vars *Variables, indent int) {
-	printIndent(indent)
-	fmt.Printf("Variables\n")
+	printfIndent(indent, "Variables\n")
 	fmt.Printf("%v\n", vars.values)
 }
 
 func PrintStatementList(stmtList []*Statement, indent int) {
-	printIndent(indent)
-	fmt.Printf("StatementList\n")
+	printfIndent(indent, "StatementList\n")
 	for _, stmt := range stmtList {
 		PrintOneStatement(stmt, indent+1)
 	}
 }
 
 func PrintOneStatement(stmt *Statement, indent int) {
-	printIndent(indent)
-	fmt.Printf("Statement (type code: %v)\n", stmt.stmtType)
+	printfIndent(indent, "Statement (type code: %v)\n", stmt.stmtType)
 
 	switch stmt.stmtType {
 	case StmtAssignment:
@@ -195,43 +196,35 @@ func PrintOneStatement(stmt *Statement, indent int) {
 }
 
 func PrintAssignmentStmt(assign *AssignmentStatement, indent int) {
-	printIndent(indent)
-	fmt.Printf("Assignment\n")
+	printfIndent(indent, "Assignment\n")
 
-	printIndent(indent)
-	fmt.Printf("lhs var = %s\n", assign.identifier)
+	printfIndent(indent, "lhs var = %s\n", assign.identifier)
 	PrintExpression(assign.exprn, indent+1)
 }
 
 func PrintIfStmt(ifStmt *IfStatement, indent int) {
-	printIndent(indent)
-	fmt.Printf("If Statement\n")
+	printfIndent(indent, "If Statement\n")
 
-	printIndent(indent)
-	fmt.Printf("predicate\n")
+	printfIndent(indent, "predicate\n")
 	PrintBooleanExpression(ifStmt.boolExpression, indent+1)
 
-	printIndent(indent)
-	fmt.Printf("if stmts\n")
+	printfIndent(indent, "if stmts\n")
 	PrintStatementList(ifStmt.stmtList, indent+1)
 
 	// print the elseif parts
 	for i, elseif := range ifStmt.elsifList {
-		printIndent(indent + 1)
-		fmt.Printf("[%d] elsif\n", i)
+		printfIndent(indent+1, "[%d] elsif\n", i)
 		printElseIfStmt(elseif, indent+1)
 	}
 
 	if len(ifStmt.elseStmtList) > 0 {
-		printIndent(indent)
-		fmt.Printf("else stmts\n")
+		printfIndent(indent, "else stmts\n")
 		PrintStatementList(ifStmt.elseStmtList, indent+1)
 	}
 }
 
 func PrintLoopStmt(loopStmt *LoopStatement, indent int) {
-	printIndent(indent)
-	fmt.Printf("Loop Statement (%v)\n", loopStmt.loopType)
+	printfIndent(indent, "Loop Statement (%v)\n", loopStmt.loopType)
 	switch loopStmt.loopType {
 	case LoopWhile:
 		PrintBooleanExpression(loopStmt.boolExpression, indent+1)
@@ -242,100 +235,125 @@ func PrintLoopStmt(loopStmt *LoopStatement, indent int) {
 }
 
 func printElseIfStmt(elseif *ElseIf, indent int) {
-	printIndent(indent)
-	fmt.Printf("elsif expression\n")
+	printfIndent(indent, "elsif expression\n")
 	PrintBooleanExpression(elseif.boolExpression, indent+1)
 
-	printIndent(indent)
-	fmt.Printf("elsif stmts\n")
+	printfIndent(indent, "elsif stmts\n")
 	PrintStatementList(elseif.stmtList, indent+1)
 }
 
 func PrintExpression(exprn *Expression, indent int) {
-	printIndent(indent)
-	fmt.Printf("Expression\n")
-
+	printfIndent(indent, "Expression\n")
 	switch exprn.exprnType {
 	case ExprnBoolean:
 		PrintBooleanExpression(exprn.boolExpression, indent+1)
 	case ExprnInteger:
-		// PrintIntegerExpression(exprn.intExpression, indent + 1)
+		PrintIntExpression(exprn.intExpression, indent+1)
 	case ExprnString:
 		// PrintStringExpression(exprn.stringExpression, indent + 1)
 	}
 }
 
 func PrintBooleanExpression(exprn *BoolExpression, indent int) {
-	printIndent(indent)
-	fmt.Printf("Boolean Expression\n")
-
+	printfIndent(indent, "Boolean Expression\n")
 	PrintOrTerms(exprn.boolOrTerms, indent)
 }
 
 func PrintOrTerms(orTerms []*BoolTerm, indent int) {
-	printIndent(indent)
-	fmt.Printf("Or Terms\n")
-
+	printfIndent(indent, "Or Terms\n")
 	for i, term := range orTerms {
-		PrintTerm(i, term, indent+1)
+		PrintOrTerm(i, term, indent+1)
 	}
 }
 
-func PrintTerm(i int, term *BoolTerm, indent int) {
-	printIndent(indent)
-	fmt.Printf("[%d]: term\n", i)
-
+func PrintOrTerm(i int, term *BoolTerm, indent int) {
+	printfIndent(indent, "[%d]: term\n", i)
 	PrintAndFactors(term.boolAndFactors, indent+1)
 }
 
 func PrintAndFactors(andFactors []*BoolFactor, indent int) {
-	printIndent(indent)
-
-	fmt.Printf("And Factors\n")
-
+	printfIndent(indent, "And Factors\n")
 	for i, factor := range andFactors {
-		PrintFactor(i, factor, indent+1)
+		PrintBoolFactor(i, factor, indent+1)
 	}
 }
 
-func PrintFactor(i int, factor *BoolFactor, indent int) {
-	printIndent(indent)
-	fmt.Printf("[%d]: factor\n", i)
-
+func PrintBoolFactor(i int, factor *BoolFactor, indent int) {
+	printfIndent(indent, "[%d]: factor\n", i)
 	switch factor.boolFactorType {
 	case BoolFactorNot:
-		PrintNotFactor(i, factor.notBoolFactor, indent+1)
+		printfIndent(indent, "Not factor\n")
+		PrintBoolFactor(i, factor.notBoolFactor, indent+1)
 	case BoolFactorConst:
-		PrintConstFactor(factor.boolConst, indent+1)
+		printfIndent(indent, "Const factor: %t\n", factor.boolConst)
 	case BoolFactorId:
-		PrintIdFactor(factor.boolIdentifier, indent+1)
+		printfIndent(indent, "Id factor: %s\n", factor.boolIdentifier)
 	case BoolFactorBracket:
-		PrintBracketFactor(factor.bracketedExprn, indent+1)
+		printfIndent(indent, "Bracket expression\n")
+		PrintBooleanExpression(factor.bracketedExprn, indent+1)
 	}
 }
 
-func PrintNotFactor(i int, factor *BoolFactor, indent int) {
-	printIndent(indent)
-	fmt.Printf("Not factor\n")
-
-	PrintFactor(i, factor.notBoolFactor, indent+1)
+func PrintIntExpression(exprn *IntExpression, indent int) {
+	printfIndent(indent, "Integer Expression\n")
+	PrintPlusTerms(exprn.plusTerms, indent)
+	PrintMinusTerms(exprn.minusTerms, indent)
 }
 
-func PrintBracketFactor(exprn *BoolExpression, indent int) {
-	printIndent(indent)
-	fmt.Printf("Bracket expression\n")
-
-	PrintBooleanExpression(exprn, indent+1)
+func PrintPlusTerms(plusTerms []*IntTerm, indent int) {
+	printfIndent(indent, "Plus Terms\n")
+	for i, term := range plusTerms {
+		PrintPlusTerm(i, term, indent+1)
+	}
 }
 
-func PrintConstFactor(boolConst bool, indent int) {
-	printIndent(indent)
-	fmt.Printf("Const factor: %t\n", boolConst)
+func PrintMinusTerms(minusTerms []*IntTerm, indent int) {
+	printfIndent(indent, "Minus Terms\n")
+	for i, term := range minusTerms {
+		PrintMinusTerm(i, term, indent+1)
+	}
 }
 
-func PrintIdFactor(id string, indent int) {
-	printIndent(indent)
-	fmt.Printf("Id factor: %s\n", id)
+func PrintPlusTerm(i int, term *IntTerm, indent int) {
+	printfIndent(indent, "[%d]: plus term\n", i)
+	PrintTimesFactors(term.timesFactors, indent+1)
+	PrintDivideFactors(term.divideFactors, indent+1)
+}
+
+func PrintMinusTerm(i int, term *IntTerm, indent int) {
+	printfIndent(indent, "[%d]: minus term\n", i)
+	PrintTimesFactors(term.timesFactors, indent+1)
+	PrintDivideFactors(term.divideFactors, indent+1)
+}
+
+func PrintTimesFactors(timesFactors []*IntFactor, indent int) {
+	printfIndent(indent, "Times Factors\n")
+	for i, factor := range timesFactors {
+		PrintIntFactor(i, factor, indent+1)
+	}
+}
+
+func PrintDivideFactors(divideFactors []*IntFactor, indent int) {
+	printfIndent(indent, "Divide Factors\n")
+	for i, factor := range divideFactors {
+		PrintIntFactor(i, factor, indent+1)
+	}
+}
+
+func PrintIntFactor(i int, factor *IntFactor, indent int) {
+	printfIndent(indent, "[%d]: factor\n", i)
+	switch factor.intFactorType {
+	case IntFactorMinus:
+		printfIndent(indent, "Minus factor\n")
+		PrintIntFactor(i, factor.minusIntFactor, indent+1)
+	case IntFactorConst:
+		printfIndent(indent, "Const factor: %t\n", factor.intConst)
+	case IntFactorId:
+		printfIndent(indent, "Id factor: %s\n", factor.intIdentifier)
+	case IntFactorBracket:
+		printfIndent(indent, "Bracket expression\n")
+		PrintIntExpression(factor.bracketedExprn, indent+1)
+	}
 }
 
 func NewParser(l *lexer) *Parser {
@@ -767,7 +785,7 @@ loop:
 			break loop
 		}
 		parser.nextItem()
-		boolTerm, err = parser.parseIntTerm()
+		intTerm, err := parser.parseIntTerm()
 		if err != nil {
 			return nil, parser.Errorf("Error parsing int term")
 		}
@@ -778,6 +796,42 @@ loop:
 		}
 	}
 	return intExprn, nil
+}
+
+func (parser *Parser) parseIntTerm() (intTerm *IntTerm, err error) {
+	intTerm = new(IntTerm)
+
+	// process 1st factor
+	intFactor, err := parser.parseIntFactor()
+	if err != nil {
+		return nil, parser.Errorf("Error parsing integer factor")
+	}
+	intTerm.timesFactors = append(intTerm.timesFactors, intFactor)
+
+	// optionally process others
+	var usingTimes bool
+loop:
+	for {
+		switch parser.peek().typ {
+		case itemTimes:
+			usingTimes = true
+		case itemDivide:
+			usingTimes = false
+		default:
+			break loop
+		}
+		parser.nextItem()
+		intFactor, err := parser.parseIntFactor()
+		if err != nil {
+			return nil, parser.Errorf("Error parsing int term")
+		}
+		if usingTimes {
+			intTerm.timesFactors = append(intTerm.timesFactors, intFactor)
+		} else {
+			intTerm.divideFactors = append(intTerm.divideFactors, intFactor)
+		}
+	}
+	return intTerm, nil
 }
 
 //<bool-term>::=<bool-factor>{<and><bool-factor>}
@@ -841,6 +895,43 @@ func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 		return nil, parser.Errorf("Invalid boolean factor")
 	}
 	return boolFactor, nil
+}
+
+func (parser *Parser) parseIntFactor() (intFactor *IntFactor, err error) {
+	intFactor = new(IntFactor)
+
+	item := parser.nextItem()
+	switch item.typ {
+	case itemIdentifier:
+		intFactor.intFactorType = IntFactorId
+		intFactor.intIdentifier = item.val
+	case itemIntegerLiteral:
+		intFactor.intFactorType = IntFactorConst
+		intFactor.intConst, err = strconv.Atoi(item.val)
+		if err != nil {
+			return nil, parser.Errorf("Invalid integer literal")
+		}
+	case itemMinus:
+		intFactor.intFactorType = IntFactorMinus
+		intFactor.minusIntFactor, err = parser.parseIntFactor()
+		if err != nil {
+			return nil, parser.Errorf("Minus missing int factor")
+		}
+	case itemLeftParen:
+		intFactor.intFactorType = IntFactorBracket
+		intFactor.bracketedExprn, err = parser.parseIntExpression()
+		if err != nil {
+			return nil, parser.Errorf("Can not process bracketed expression")
+		}
+
+		err = parser.match(itemRightParen, "Bracketed expression")
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, parser.Errorf("Invalid integer factor")
+	}
+	return intFactor, nil
 }
 
 type Value struct {
