@@ -744,6 +744,42 @@ func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err erro
 	return boolExprn, nil
 }
 
+func (parser *Parser) parseIntExpression() (intExprn *IntExpression, err error) {
+	intExprn = new(IntExpression)
+
+	// process 1st term
+	intTerm, err := parser.parseIntTerm()
+	if err != nil {
+		return nil, parser.Errorf("Error parsing integer term")
+	}
+	intExprn.plusTerms = append(intExprn.plusTerms, intTerm)
+
+	// optionally process others
+	var usingPlus bool
+loop:
+	for {
+		switch parser.peek().typ {
+		case itemPlus:
+			usingPlus = true
+		case itemMinus:
+			usingPlus = false
+		default:
+			break loop
+		}
+		parser.nextItem()
+		boolTerm, err = parser.parseIntTerm()
+		if err != nil {
+			return nil, parser.Errorf("Error parsing int term")
+		}
+		if usingPlus {
+			intExprn.plusTerms = append(intExprn.plusTerms, intTerm)
+		} else {
+			intExprn.minusTerms = append(intExprn.minusTerms, intTerm)
+		}
+	}
+	return intExprn, nil
+}
+
 //<bool-term>::=<bool-factor>{<and><bool-factor>}
 func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
 	boolTerm = new(BoolTerm)
@@ -757,10 +793,7 @@ func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
 
 	// optionally process others
 	for parser.peek().typ == itemAnd {
-		err = parser.match(itemAnd, "Boolean Term")
-		if err != nil {
-			return nil, err
-		}
+		parser.nextItem()
 		boolFactor, err = parser.parseBoolFactor()
 		if err != nil {
 			return nil, parser.Errorf("Error parsing boolean term")
@@ -809,52 +842,6 @@ func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 	}
 	return boolFactor, nil
 }
-
-/*
-func (parser *Parser) parseIfStatement() (ifStmt *IfStatement, err error) {
-	var elseifList []*ElseIf
-	var elseStmtList []*Statement
-
-    exprn, err := parser.parseBoolExpression()
-    if err != nil {
-    	return nil, err
-	}
-
-    stmtList, err := parser.parseStatementList()
-	if err != nil {
-		return nil, err
-	}
-
-	// test for next optional parts or the end
-    item := parser.nextItem()
-
-    // optional elseif
-    if item.typ == itemElseIf {
-		elseifList, err = parser.parseElseIfList()
-		if err != nil {
-			return nil, err
-		}
-		item = parser.nextItem()
-	}
-
-	// optional else
-	if item.typ == itemElse {
-		elseStmtList, err = parser.parseElse()
-		if err != nil {
-			return nil, err
-		}
-		item = parser.nextItem()
-	}
-
-	// mandatory endif
-	if item.typ != itemEndIf {
-	    err = errors.New("Missing endif")
-	    return nil, err
-	}
-
-	return &IfStatement{exprn, stmtList, elseifList, elseStmtList}, nil
-}
-*/
 
 type Value struct {
 	valueType ValueType
@@ -935,34 +922,6 @@ type Expression struct {
 	boolExpression   *BoolExpression
 	stringExpression *StringExpression
 }
-
-type IntExpression struct {
-	intPlusTerms  []*IntTerm
-	intMinusTerms []*IntTerm
-}
-
-type IntTerm struct {
-	intTimesFactors  []*IntFactor
-	intDivideFactors []*IntFactor
-}
-
-type IntFactor struct {
-	intFactorType IntFactorType
-
-	intConst       int
-	intIdentifier  string
-	minusIntFactor *IntFactor
-	bracketedExprn *IntExpression
-}
-
-type IntFactorType int
-
-const (
-	IntFactorConst IntFactorType = iota
-	IntFactorId
-	IntFactorMinus
-	IntFactorBracket
-)
 
 //<bool-expression>::=<bool-term>{<or><bool-term>}
 //<bool-term>::=<bool-factor>{<and><bool-factor>}
