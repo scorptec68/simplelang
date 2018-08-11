@@ -79,7 +79,7 @@ const (
 	itemNot                            // '~'
 	itemPlus                           // '+'
 	itemMinus                          // '-'
-	itemMultiply                       // '*'
+	itemTimes                          // '*'
 	itemDivide                         // '/'
 	itemLeftParen                      // '('
 	itemRightParen                     // ')'
@@ -88,25 +88,25 @@ const (
 	itemEOF
 	itemIdentifier // alphanumeric identifier
 	// Keywords appear after all the rest.
-	itemKeyword // used only to delimit the keywords
-	itemIf      // if keyword
-	itemElse    // else keyword
-	itemElseIf  // elseif keyword
-	itemEndIf   // endif keyword
-	itemLoop    // loop keyword
-	itemTimes   // times keyword
-	itemEndLoop // endloop keyword
-	itemPrint   // print keyword
-	itemStr     // str keyword
-	itemBoolean // boolean keyword
-	itemString  // string keyword
-	itemInteger // integer keyword
-	itemTrue    // true
-	itemFalse   // false
-	itemVar     // var
-	itemEndVar  // endvar
-	itemRun     // run
-	itemEndRun  // endrun
+	itemKeyword   // used only to delimit the keywords
+	itemIf        // if keyword
+	itemElse      // else keyword
+	itemElseIf    // elseif keyword
+	itemEndIf     // endif keyword
+	itemLoop      // loop keyword
+	itemLoopTimes // times keyword in for loop
+	itemEndLoop   // endloop keyword
+	itemPrint     // print keyword
+	itemStr       // str keyword
+	itemBoolean   // boolean keyword
+	itemString    // string keyword
+	itemInteger   // integer keyword
+	itemTrue      // true
+	itemFalse     // false
+	itemVar       // var
+	itemEndVar    // endvar
+	itemRun       // run
+	itemEndRun    // endrun
 	itemNone
 )
 
@@ -138,7 +138,7 @@ var keywords = map[string]itemType{
 	"integer": itemInteger,
 	"true":    itemTrue,
 	"false":   itemFalse,
-	"times":   itemTimes,
+	"times":   itemLoopTimes,
 }
 
 var symbols = map[string]itemType{
@@ -151,7 +151,7 @@ var symbols = map[string]itemType{
 	"-":  itemMinus,
 	"~":  itemNot,
 	"#":  itemNotEquals,
-	"*":  itemMultiply,
+	"*":  itemTimes,
 	"/":  itemDivide,
 	"&":  itemAnd,
 	"|":  itemOr,

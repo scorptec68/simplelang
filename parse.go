@@ -296,8 +296,12 @@ func PrintBoolFactor(i int, factor *BoolFactor, indent int) {
 
 func PrintIntExpression(exprn *IntExpression, indent int) {
 	printfIndent(indent, "Integer Expression\n")
-	PrintPlusTerms(exprn.plusTerms, indent)
-	PrintMinusTerms(exprn.minusTerms, indent)
+	if len(exprn.plusTerms) > 0 {
+		PrintPlusTerms(exprn.plusTerms, indent)
+	}
+	if len(exprn.minusTerms) > 0 {
+		PrintMinusTerms(exprn.minusTerms, indent)
+	}
 }
 
 func PrintPlusTerms(plusTerms []*IntTerm, indent int) {
@@ -316,8 +320,12 @@ func PrintMinusTerms(minusTerms []*IntTerm, indent int) {
 
 func PrintPlusTerm(i int, term *IntTerm, indent int) {
 	printfIndent(indent, "[%d]: plus term\n", i)
-	PrintTimesFactors(term.timesFactors, indent+1)
-	PrintDivideFactors(term.divideFactors, indent+1)
+	if len(term.timesFactors) > 0 {
+		PrintTimesFactors(term.timesFactors, indent+1)
+	}
+	if len(term.divideFactors) > 0 {
+		PrintDivideFactors(term.divideFactors, indent+1)
+	}
 }
 
 func PrintMinusTerm(i int, term *IntTerm, indent int) {
@@ -347,7 +355,7 @@ func PrintIntFactor(i int, factor *IntFactor, indent int) {
 		printfIndent(indent, "Minus factor\n")
 		PrintIntFactor(i, factor.minusIntFactor, indent+1)
 	case IntFactorConst:
-		printfIndent(indent, "Const factor: %t\n", factor.intConst)
+		printfIndent(indent, "Const factor: %d\n", factor.intConst)
 	case IntFactorId:
 		printfIndent(indent, "Id factor: %s\n", factor.intIdentifier)
 	case IntFactorBracket:
@@ -561,7 +569,7 @@ func (parser *Parser) parseLoopStatement() (loopStmt *LoopStatement, err error) 
 		// forever loop
 		// just statements and no conditional part of loop construct
 		loopStmt.loopType = LoopForever
-	case itemTimes:
+	case itemLoopTimes:
 		parser.nextItem() // move over the "times" keyword
 		loopStmt.loopType = LoopTimes
 		//loopStmt.intExpression, err = parser.parseIntExpression()
@@ -692,8 +700,13 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 		assign.exprn.exprnType = ExprnBoolean
 		assign.exprn.boolExpression = boolExprn
 	case ValueInteger:
-		// TODO
-		return assign, nil
+		intExprn, err := parser.parseIntExpression()
+		if err != nil {
+			return nil, err
+		}
+		assign.exprn = new(Expression)
+		assign.exprn.exprnType = ExprnInteger
+		assign.exprn.intExpression = intExprn
 	case ValueString:
 		// TODO
 		return assign, nil
