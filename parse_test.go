@@ -11,6 +11,7 @@ func ExampleParse1() {
 	   z: boolean
 	   a: integer
 	   b: integer
+	   c: string
     endvar
 
     run
@@ -36,7 +37,8 @@ func ExampleParse1() {
 		//x = y | (z | true) & x
 		//a = 2 / 3
 		//a = 2 * 3
-		a = 3 + (b / a + 2) * 6
+		//a = 3 + (b / a + 2) * 6
+		c = "hello" + " " + "there"
     endrun`
 
 	l := lex("test", inputStr)

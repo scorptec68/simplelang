@@ -250,7 +250,38 @@ func PrintExpression(exprn *Expression, indent int) {
 	case ExprnInteger:
 		PrintIntExpression(exprn.intExpression, indent+1)
 	case ExprnString:
-		// PrintStringExpression(exprn.stringExpression, indent + 1)
+		PrintStringExpression(exprn.stringExpression, indent+1)
+	}
+}
+
+func PrintStringExpression(exprn *StringExpression, indent int) {
+	printfIndent(indent, "Boolean Expression\n")
+	PrintStrAddTerms(exprn.addTerms, indent)
+}
+
+func PrintStrAddTerms(addTerms []*StringTerm, indent int) {
+	printfIndent(indent, "Add Terms\n")
+	for i, term := range addTerms {
+		PrintStrAddTerm(i, term, indent+1)
+	}
+}
+
+func PrintStrAddTerm(i int, term *StringTerm, indent int) {
+	printfIndent(indent, "[%d]: term\n", i)
+	switch term.strTermType {
+	case StringTermValue:
+		printfIndent(indent, "Literal: %s\n", term.strVal)
+	case StringTermId:
+		printfIndent(indent, "Identifier: %s\n", term.identifier)
+	case StringTermBracket:
+		printfIndent(indent, "Bracketed String Expression \n")
+		PrintStringExpression(term.bracketedExprn, indent+1)
+	case StringTermStringedBoolExprn:
+		printfIndent(indent, "Stringify Bool Expression \n")
+		PrintBooleanExpression(term.stringedBoolExprn, indent+1)
+	case StringTermStringedIntExprn:
+		printfIndent(indent, "Stringify Int Expression \n")
+		PrintIntExpression(term.stringedIntExprn, indent+1)
 	}
 }
 
@@ -507,7 +538,6 @@ func (parser *Parser) Errorf(format string, a ...interface{}) error {
 	item := parser.token[0]
 	preamble := fmt.Sprintf("Error at line %d: ", item.line)
 	return fmt.Errorf(preamble+format, a...)
-	//return errors.New(fmt.Sprintf(preamble+format, a...))
 }
 
 func (parser *Parser) parseStatement() (stmt *Statement, err error) {
@@ -708,8 +738,13 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 		assign.exprn.exprnType = ExprnInteger
 		assign.exprn.intExpression = intExprn
 	case ValueString:
-		// TODO
-		return assign, nil
+		strExprn, err := parser.parseStrExpression()
+		if err != nil {
+			return nil, err
+		}
+		assign.exprn = new(Expression)
+		assign.exprn.exprnType = ExprnString
+		assign.exprn.stringExpression = strExprn
 	default:
 		return nil, parser.Errorf("Assignment to undeclared variable: %s", idItem.val)
 	}
@@ -762,10 +797,7 @@ func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err erro
 
 	// optionally process others
 	for parser.peek().typ == itemOr {
-		err = parser.match(itemOr, "Boolean Expression")
-		if err != nil {
-			return nil, err
-		}
+		parser.nextItem()
 		boolTerm, err = parser.parseBoolTerm()
 		if err != nil {
 			return nil, parser.Errorf("Error parsing boolean term")
@@ -773,6 +805,33 @@ func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err erro
 		boolExprn.boolOrTerms = append(boolExprn.boolOrTerms, boolTerm)
 	}
 	return boolExprn, nil
+}
+
+//
+//	<string-expression> ::= <str-term> {<binary-str-operator> <str-term>}
+//	<string-term> ::= <string-literal> | <identifier> | str(<expression>)
+//	                     | <lparen><string-expression><rparen>
+func (parser *Parser) parseStrExpression() (strExprn *StringExpression, err error) {
+	strExprn = new(StringExpression)
+
+	// process 1st erm
+	strTerm, err := parser.parseStrTerm()
+	if err != nil {
+		return nil, parser.Errorf("Error parsing string term")
+	}
+	strExprn.addTerms = append(strExprn.addTerms, strTerm)
+
+	// optionally process others
+	for parser.peek().typ == itemPlus {
+		parser.nextItem()
+		strTerm, err = parser.parseStrTerm()
+		if err != nil {
+			return nil, parser.Errorf("Error parsing string term")
+		}
+		strExprn.addTerms = append(strExprn.addTerms, strTerm)
+	}
+	return strExprn, nil
+
 }
 
 func (parser *Parser) parseIntExpression() (intExprn *IntExpression, err error) {
@@ -868,6 +927,56 @@ func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
 		boolTerm.boolAndFactors = append(boolTerm.boolAndFactors, boolFactor)
 	}
 	return boolTerm, err
+}
+
+//	<string-term> ::= <string-literal> | <identifier>
+//				| strInt(<int-expression>) | strBool(<bool-expression>)
+//	            | <lparen><string-expression><rparen>
+func (parser *Parser) parseStrTerm() (strTerm *StringTerm, err error) {
+	strTerm = new(StringTerm)
+
+	item := parser.nextItem()
+	switch item.typ {
+	case itemIdentifier:
+		strTerm.strTermType = StringTermId
+		strTerm.identifier = item.val
+	case itemStringLiteral:
+		strTerm.strTermType = StringTermValue
+		strTerm.strVal = item.val
+	case itemLeftParen:
+		strTerm.strTermType = StringTermBracket
+		strTerm.bracketedExprn, err = parser.parseStrExpression()
+		if err != nil {
+			return nil, parser.Errorf("Can not process bracketed expression")
+		}
+		err = parser.match(itemRightParen, "Bracketed expression")
+		if err != nil {
+			return nil, err
+		}
+	case itemStrBool:
+		strTerm.strTermType = StringTermStringedBoolExprn
+		strTerm.stringedBoolExprn, err = parser.parseBoolExpression()
+		if err != nil {
+			return nil, parser.Errorf("Can not process stringed expression")
+		}
+		err = parser.match(itemRightParen, "Stringify expression")
+		if err != nil {
+			return nil, err
+		}
+	case itemStrInt:
+		strTerm.strTermType = StringTermStringedIntExprn
+		strTerm.stringedIntExprn, err = parser.parseIntExpression()
+		if err != nil {
+			return nil, parser.Errorf("Can not process stringed expression")
+		}
+		err = parser.match(itemRightParen, "Stringify expression")
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, parser.Errorf("Invalid string term")
+	}
+	return strTerm, nil
 }
 
 //<bool-factor>::=<bool-constant>|<not><bool-factor>|(<bool-expression>)|<int-comparison>
@@ -1113,14 +1222,16 @@ const (
 	StringTermValue = iota
 	StringTermId
 	StringTermBracket
-	StringTermStringedExprn
+	StringTermStringedIntExprn
+	StringTermStringedBoolExprn
 )
 
 type StringTerm struct {
 	strTermType StringTermType
 
-	strVal         string
-	identifier     string
-	bracketedExprn *StringExpression
-	stringedExprn  *Expression
+	strVal            string
+	identifier        string
+	bracketedExprn    *StringExpression
+	stringedIntExprn  *IntExpression
+	stringedBoolExprn *BoolExpression
 }

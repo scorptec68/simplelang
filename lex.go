@@ -97,7 +97,8 @@ const (
 	itemLoopTimes // times keyword in for loop
 	itemEndLoop   // endloop keyword
 	itemPrint     // print keyword
-	itemStr       // str keyword
+	itemStrInt    // str keyword
+	itemStrBool   // str keyword
 	itemBoolean   // boolean keyword
 	itemString    // string keyword
 	itemInteger   // integer keyword
@@ -121,24 +122,25 @@ var others = map[itemType]string{
 }
 
 var keywords = map[string]itemType{
-	"var":     itemVar,
-	"endvar":  itemEndVar,
-	"run":     itemRun,
-	"endrun":  itemEndRun,
-	"if":      itemIf,
-	"else":    itemElse,
-	"elseif":  itemElseIf,
-	"endif":   itemEndIf,
-	"loop":    itemLoop,
-	"endloop": itemEndLoop,
-	"print":   itemPrint,
-	"str":     itemStr,
-	"boolean": itemBoolean,
-	"string":  itemString,
-	"integer": itemInteger,
-	"true":    itemTrue,
-	"false":   itemFalse,
-	"times":   itemLoopTimes,
+	"var":      itemVar,
+	"endvar":   itemEndVar,
+	"run":      itemRun,
+	"endrun":   itemEndRun,
+	"if":       itemIf,
+	"else":     itemElse,
+	"elseif":   itemElseIf,
+	"endif":    itemEndIf,
+	"loop":     itemLoop,
+	"endloop":  itemEndLoop,
+	"print(":   itemPrint,
+	"strInt(":  itemStrInt,
+	"strBool(": itemStrBool,
+	"boolean":  itemBoolean,
+	"string":   itemString,
+	"integer":  itemInteger,
+	"true":     itemTrue,
+	"false":    itemFalse,
+	"times":    itemLoopTimes,
 }
 
 var symbols = map[string]itemType{
