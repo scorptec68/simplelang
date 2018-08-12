@@ -191,7 +191,7 @@ func PrintOneStatement(stmt *Statement, indent int) {
 	case StmtLoop:
 		PrintLoopStmt(stmt.loopStmt, indent+1)
 	case StmtPrint:
-		// PrintPrintStmt(stmt.printStmt, indent + 1)
+		PrintPrintStmt(stmt.printStmt, indent+1)
 	}
 }
 
@@ -221,6 +221,11 @@ func PrintIfStmt(ifStmt *IfStatement, indent int) {
 		printfIndent(indent, "else stmts\n")
 		PrintStatementList(ifStmt.elseStmtList, indent+1)
 	}
+}
+
+func PrintPrintStmt(printStmt *PrintStatement, indent int) {
+	printfIndent(indent, "Print Statement\n")
+	PrintStringExpression(printStmt.exprn, indent+1)
 }
 
 func PrintLoopStmt(loopStmt *LoopStatement, indent int) {
@@ -270,7 +275,7 @@ func PrintStrAddTerm(i int, term *StringTerm, indent int) {
 	printfIndent(indent, "[%d]: string term\n", i)
 	switch term.strTermType {
 	case StringTermValue:
-		printfIndent(indent, "Literal: %s\n", term.strVal)
+		printfIndent(indent, "Literal: \"%s\"\n", term.strVal)
 	case StringTermId:
 		printfIndent(indent, "Identifier: %s\n", term.identifier)
 	case StringTermBracket:
@@ -569,19 +574,39 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 		if err != nil {
 			return nil, err
 		}
-	/*
-		case itemPrint:
-			stmtType = StmtPrint
-			printStmt, err = parser.parsePrintStatement()
-			if err !=  nil {
-				return nil, err
-			}
-	*/
+	case itemPrint:
+		stmtType = StmtPrint
+		printStmt, err = parser.parsePrintStatement()
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, parser.Errorf("Missing leading statement token. Got %v", item)
 	}
 
 	return &Statement{stmtType, assignStmt, ifStmt, loopStmt, printStmt}, err
+}
+
+func (parser *Parser) parsePrintStatement() (printStmt *PrintStatement, err error) {
+	printStmt = new(PrintStatement)
+
+	err = parser.match(itemLeftParen, "print statement")
+	if err != nil {
+		return nil, err
+	}
+	printStmt.exprn, err = parser.parseStrExpression()
+	if err != nil {
+		return nil, err
+	}
+	err = parser.match(itemRightParen, "print statement")
+	if err != nil {
+		return nil, err
+	}
+	err = parser.match(itemNewLine, "loop")
+	if err != nil {
+		return nil, err
+	}
+	return printStmt, nil
 }
 
 // Note: other parsers use panic/recover instead of returning an error
