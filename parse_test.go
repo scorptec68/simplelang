@@ -38,7 +38,8 @@ func ExampleParse1() {
 		//a = 2 / 3
 		//a = 2 * 3
 		//a = 3 + (b / a + 2) * 6
-		c = "hello" + " " + "there"
+		//c = "hello" + " " + "there"
+		c = strInt(2 + 3 / 5)
     endrun`
 
 	l := lex("test", inputStr)

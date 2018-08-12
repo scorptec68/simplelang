@@ -122,25 +122,25 @@ var others = map[itemType]string{
 }
 
 var keywords = map[string]itemType{
-	"var":      itemVar,
-	"endvar":   itemEndVar,
-	"run":      itemRun,
-	"endrun":   itemEndRun,
-	"if":       itemIf,
-	"else":     itemElse,
-	"elseif":   itemElseIf,
-	"endif":    itemEndIf,
-	"loop":     itemLoop,
-	"endloop":  itemEndLoop,
-	"print(":   itemPrint,
-	"strInt(":  itemStrInt,
-	"strBool(": itemStrBool,
-	"boolean":  itemBoolean,
-	"string":   itemString,
-	"integer":  itemInteger,
-	"true":     itemTrue,
-	"false":    itemFalse,
-	"times":    itemLoopTimes,
+	"var":     itemVar,
+	"endvar":  itemEndVar,
+	"run":     itemRun,
+	"endrun":  itemEndRun,
+	"if":      itemIf,
+	"else":    itemElse,
+	"elseif":  itemElseIf,
+	"endif":   itemEndIf,
+	"loop":    itemLoop,
+	"endloop": itemEndLoop,
+	"print":   itemPrint,
+	"strInt":  itemStrInt,
+	"strBool": itemStrBool,
+	"boolean": itemBoolean,
+	"string":  itemString,
+	"integer": itemInteger,
+	"true":    itemTrue,
+	"false":   itemFalse,
+	"times":   itemLoopTimes,
 }
 
 var symbols = map[string]itemType{
@@ -485,6 +485,7 @@ func processKeyword(l *lexer) processResult {
 
 			// now look up word
 			word := l.itemString()
+			fmt.Printf("Look up %s\n", word)
 			if item, ok := keywords[word]; ok {
 				l.emit(item)
 				return resultMatch
@@ -538,7 +539,7 @@ func isAlpha(r rune) bool {
 }
 
 func isEndOfWord(r rune) bool {
-	return isSpace(r) || isEndOfLine(r) || r == eof
+	return isSpace(r) || isEndOfLine(r) || r == eof || r == '('
 }
 
 func isBinaryOperator(t itemType) bool {

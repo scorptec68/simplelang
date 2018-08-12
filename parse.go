@@ -255,19 +255,19 @@ func PrintExpression(exprn *Expression, indent int) {
 }
 
 func PrintStringExpression(exprn *StringExpression, indent int) {
-	printfIndent(indent, "Boolean Expression\n")
+	printfIndent(indent, "String Expression\n")
 	PrintStrAddTerms(exprn.addTerms, indent)
 }
 
 func PrintStrAddTerms(addTerms []*StringTerm, indent int) {
-	printfIndent(indent, "Add Terms\n")
+	printfIndent(indent, "Add String Terms\n")
 	for i, term := range addTerms {
 		PrintStrAddTerm(i, term, indent+1)
 	}
 }
 
 func PrintStrAddTerm(i int, term *StringTerm, indent int) {
-	printfIndent(indent, "[%d]: term\n", i)
+	printfIndent(indent, "[%d]: string term\n", i)
 	switch term.strTermType {
 	case StringTermValue:
 		printfIndent(indent, "Literal: %s\n", term.strVal)
@@ -954,6 +954,10 @@ func (parser *Parser) parseStrTerm() (strTerm *StringTerm, err error) {
 			return nil, err
 		}
 	case itemStrBool:
+		err = parser.match(itemLeftParen, "strBool")
+		if err != nil {
+			return nil, err
+		}
 		strTerm.strTermType = StringTermStringedBoolExprn
 		strTerm.stringedBoolExprn, err = parser.parseBoolExpression()
 		if err != nil {
@@ -964,6 +968,10 @@ func (parser *Parser) parseStrTerm() (strTerm *StringTerm, err error) {
 			return nil, err
 		}
 	case itemStrInt:
+		err = parser.match(itemLeftParen, "strInt")
+		if err != nil {
+			return nil, err
+		}
 		strTerm.strTermType = StringTermStringedIntExprn
 		strTerm.stringedIntExprn, err = parser.parseIntExpression()
 		if err != nil {
