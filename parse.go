@@ -327,6 +327,11 @@ func PrintBoolFactor(i int, factor *BoolFactor, indent int) {
 	case BoolFactorBracket:
 		printfIndent(indent, "Bracket expression\n")
 		PrintBooleanExpression(factor.bracketedExprn, indent+1)
+	case BoolFactorIntComparison:
+		printfIndent(indent, "Integer comparison\n")
+		printfIndent(indent, "%v", factor.intComparison.intComparator)
+		PrintIntExpression(factor.intComparison.lhsIntExpression, indent+1)
+		PrintIntExpression(factor.intComparison.rhsIntExpression, indent+1)
 	}
 }
 
@@ -1012,44 +1017,89 @@ func (parser *Parser) parseStrTerm() (strTerm *StringTerm, err error) {
 	return strTerm, nil
 }
 
-//<bool-factor>::=<bool-constant>|<not><bool-factor>|(<bool-expression>)|<int-comparison>
+//<bool-factor>::=<bool-constant>|<not><bool-factor>|(<bool-expression>)
+//                |<int-comparison>
 func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 	boolFactor = new(BoolFactor)
 
 	item := parser.nextItem()
+	match := false
 	switch item.typ {
 	case itemIdentifier:
-		boolFactor.boolFactorType = BoolFactorId
-		boolFactor.boolIdentifier = item.val
+		// only match on boolean variables
+		if parser.lookupType(item.val) == ValueBoolean {
+			boolFactor.boolFactorType = BoolFactorId
+			boolFactor.boolIdentifier = item.val
+			match = true
+		}
 	case itemTrue:
 		boolFactor.boolFactorType = BoolFactorConst
 		boolFactor.boolConst = true
+		match = true
 	case itemFalse:
 		boolFactor.boolFactorType = BoolFactorConst
 		boolFactor.boolConst = false
+		match = true
 	case itemNot:
 		boolFactor.boolFactorType = BoolFactorNot
-		factor, err := parser.parseBoolFactor()
+		boolFactor.notBoolFactor, err = parser.parseBoolFactor()
 		if err != nil {
 			return nil, parser.Errorf("Not missing factor")
 		}
-		boolFactor.notBoolFactor = factor
+		match = true
 	case itemLeftParen:
 		boolFactor.boolFactorType = BoolFactorBracket
-		exprn, err := parser.parseBoolExpression()
+		boolFactor.bracketedExprn, err = parser.parseBoolExpression()
 		if err != nil {
 			return nil, parser.Errorf("Can not process bracketed expression")
 		}
-		boolFactor.bracketedExprn = exprn
 
 		err = parser.match(itemRightParen, "Bracketed expression")
 		if err != nil {
 			return nil, err
 		}
-	default:
-		return nil, parser.Errorf("Invalid boolean factor")
+		match = true
+	}
+	if !match {
+		parser.backup()
+		boolFactor.intComparison, err = parser.parseIntComparison()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return boolFactor, nil
+}
+
+func (parser *Parser) parseIntComparison() (intComp *IntComparison, err error) {
+	intComp = new(IntComparison)
+
+	intComp.lhsIntExpression, err = parser.parseIntExpression()
+	if err != nil {
+		return nil, err
+	}
+
+	item := parser.nextItem()
+	switch item.typ {
+	case itemLessThan:
+		intComp.intComparator = IntCompLessThan
+	case itemLessEquals:
+		intComp.intComparator = IntCompLessEquals
+	case itemGreaterThan:
+		intComp.intComparator = IntCompGreaterThan
+	case itemGreaterEquals:
+		intComp.intComparator = IntCompGreaterEquals
+	case itemEquals:
+		intComp.intComparator = IntCompEquals
+	default:
+		return nil, parser.Errorf("Bad operator for integer")
+	}
+
+	intComp.rhsIntExpression, err = parser.parseIntExpression()
+	if err != nil {
+		return nil, err
+	}
+
+	return intComp, nil
 }
 
 func (parser *Parser) parseIntFactor() (intFactor *IntFactor, err error) {
@@ -1120,7 +1170,23 @@ func (loopTyp LoopType) String() string {
 	case LoopWhile:
 		return "while"
 	}
-	return "uknown loop"
+	return "unknown loop"
+}
+
+func (intComp IntComparatorType) String() string {
+	switch intComp {
+	case IntCompEquals:
+		return "Equals ="
+	case IntCompGreaterEquals:
+		return "Greater or Equals >="
+	case IntCompGreaterThan:
+		return "Greater than >"
+	case IntCompLessEquals:
+		return "Less or Equals <="
+	case IntCompLessThan:
+		return "Less than <"
+	}
+	return "unknown operator"
 }
 
 type Statement struct {
@@ -1199,7 +1265,7 @@ type BoolFactor struct {
 	boolIdentifier string
 	notBoolFactor  *BoolFactor
 	bracketedExprn *BoolExpression
-	intComparison  IntComparison
+	intComparison  *IntComparison
 }
 
 type IntComparison struct {
