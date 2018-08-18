@@ -234,7 +234,7 @@ func PrintLoopStmt(loopStmt *LoopStatement, indent int) {
 	case LoopWhile:
 		PrintBooleanExpression(loopStmt.boolExpression, indent+1)
 	case LoopTimes:
-		//PrintIntExpression(loopStmt.intExpression, indent+1)
+		PrintIntExpression(loopStmt.intExpression, indent+1)
 	}
 	PrintStatementList(loopStmt.stmtList, indent+1)
 }
@@ -632,7 +632,7 @@ func (parser *Parser) parseLoopStatement() (loopStmt *LoopStatement, err error) 
 	case itemLoopTimes:
 		parser.nextItem() // move over the "times" keyword
 		loopStmt.loopType = LoopTimes
-		//loopStmt.intExpression, err = parser.parseIntExpression()
+		loopStmt.intExpression, err = parser.parseIntExpression()
 		if err != nil {
 			return nil, err
 		}
