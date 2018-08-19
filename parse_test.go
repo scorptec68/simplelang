@@ -87,9 +87,205 @@ func ExampleParse1() {
 	if err != nil {
 		fmt.Print(err)
 	} else {
-		PrintProgram(program, 2)
+		PrintProgram(program, 0)
 	}
-	/* Output:
-
-	 */
+	// Output:
+	// Program
+	//   Variables
+	//     doit: <Boolean: false>
+	//     i: <Integer: 0>
+	//     test: <String: string>
+	//     this-boy: <Boolean: false>
+	//     x: <Integer: 0>
+	//     y: <Integer: 0>
+	//   StatementList
+	//     Statement (type code: 2)
+	//       Assignment
+	//       lhs var = this-boy
+	//         Expression
+	//           Boolean Expression
+	//           Or Terms
+	//             [0]: term
+	//               And Factors
+	//                 [0]: factor
+	//                 Const factor: true
+	//     Statement (type code: 2)
+	//       Assignment
+	//       lhs var = x
+	//         Expression
+	//           Integer Expression
+	//           Plus Terms
+	//             [0]: plus term
+	//               Times Factors
+	//                 [0]: factor
+	//                 Const factor: 3
+	//             [1]: plus term
+	//               Times Factors
+	//                 [0]: factor
+	//                 Const factor: 1000000
+	//             [2]: plus term
+	//               Times Factors
+	//                 [0]: factor
+	//                 Const factor: 2
+	//             [3]: plus term
+	//               Times Factors
+	//                 [0]: factor
+	//                 Const factor: 4
+	//             [4]: plus term
+	//               Times Factors
+	//                 [0]: factor
+	//                 Const factor: 6
+	//     Statement (type code: 2)
+	//       Assignment
+	//       lhs var = x
+	//         Expression
+	//           Integer Expression
+	//           Plus Terms
+	//             [0]: plus term
+	//               Times Factors
+	//                 [0]: factor
+	//                 Const factor: 3
+	//     Statement (type code: 2)
+	//       Assignment
+	//       lhs var = test
+	//         Expression
+	//           String Expression
+	//           Add String Terms
+	//             [0]: string term
+	//             Literal: "hello"
+	//     Statement (type code: 2)
+	//       Assignment
+	//       lhs var = y
+	//         Expression
+	//           Integer Expression
+	//           Plus Terms
+	//             [0]: plus term
+	//               Times Factors
+	//                 [0]: factor
+	//                 Id factor: x
+	//             [1]: plus term
+	//               Times Factors
+	//                 [0]: factor
+	//                 Const factor: 3
+	//     Statement (type code: 3)
+	//       Print Statement
+	//         String Expression
+	//         Add String Terms
+	//           [0]: string term
+	//           Literal: "y =  "
+	//           [1]: string term
+	//           Stringify Int Expression
+	//             Integer Expression
+	//             Plus Terms
+	//               [0]: plus term
+	//                 Times Factors
+	//                   [0]: factor
+	//                   Id factor: x
+	//     Statement (type code: 1)
+	//       If Statement
+	//       predicate
+	//         Boolean Expression
+	//         Or Terms
+	//           [0]: term
+	//             And Factors
+	//               [0]: factor
+	//               Const factor: false
+	//       if stmts
+	//         StatementList
+	//           Statement (type code: 2)
+	//             Assignment
+	//             lhs var = test
+	//               Expression
+	//                 String Expression
+	//                 Add String Terms
+	//                   [0]: string term
+	//                   Literal: "super"
+	//         [0] elsif
+	//         elsif expression
+	//           Boolean Expression
+	//           Or Terms
+	//             [0]: term
+	//               And Factors
+	//                 [0]: factor
+	//                 Const factor: false
+	//         elsif stmts
+	//           StatementList
+	//             Statement (type code: 2)
+	//               Assignment
+	//               lhs var = test
+	//                 Expression
+	//                   String Expression
+	//                   Add String Terms
+	//                     [0]: string term
+	//                     Literal: "wonder"
+	//       else stmts
+	//         StatementList
+	//           Statement (type code: 2)
+	//             Assignment
+	//             lhs var = test
+	//               Expression
+	//                 String Expression
+	//                 Add String Terms
+	//                   [0]: string term
+	//                   Literal: "duper"
+	//     Statement (type code: 3)
+	//       Print Statement
+	//         String Expression
+	//         Add String Terms
+	//           [0]: string term
+	//           Identifier: test
+	//     Statement (type code: 2)
+	//       Assignment
+	//       lhs var = test
+	//         Expression
+	//           String Expression
+	//           Add String Terms
+	//             [0]: string term
+	//             Identifier: test
+	//             [1]: string term
+	//             Literal: "r"
+	//     Statement (type code: 3)
+	//       Print Statement
+	//         String Expression
+	//         Add String Terms
+	//           [0]: string term
+	//           Identifier: test
+	//     Statement (type code: 0)
+	//       Loop Statement (times)
+	//         Integer Expression
+	//         Plus Terms
+	//           [0]: plus term
+	//             Times Factors
+	//               [0]: factor
+	//               Const factor: 10
+	//         StatementList
+	//           Statement (type code: 2)
+	//             Assignment
+	//             lhs var = i
+	//               Expression
+	//                 Integer Expression
+	//                 Plus Terms
+	//                   [0]: plus term
+	//                     Times Factors
+	//                       [0]: factor
+	//                       Id factor: i
+	//                   [1]: plus term
+	//                     Times Factors
+	//                       [0]: factor
+	//                       Const factor: 1
+	//     Statement (type code: 3)
+	//       Print Statement
+	//         String Expression
+	//         Add String Terms
+	//           [0]: string term
+	//           Literal: "i = "
+	//           [1]: string term
+	//           Stringify Int Expression
+	//             Integer Expression
+	//             Plus Terms
+	//               [0]: plus term
+	//                 Times Factors
+	//                   [0]: factor
+	//                   Id factor: i
+	//
 }

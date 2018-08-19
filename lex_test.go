@@ -22,25 +22,26 @@ func ExampleLexing1() {
        x = 3
     endrun`
 
-    printTokens(lex("test", inputStr))
-	/* Output:
-item: <var>
-item: "\n" (type 19)
-item: "x" (type 21)
-item: ":" (type 18)
-item: <integer>
-item: "\n" (type 19)
-item: <endvar>
-item: "\n" (type 19)
-item: <run>
-item: "\n" (type 19)
-item: "x" (type 21)
-item: "=" (type 3)
-item: "3" (type 1)
-item: "\n" (type 19)
-item: <endrun>
-item: EOF
-	*/
+	printTokens(lex("test", inputStr))
+	// Output:
+	// item: <var>
+	// item: "\n" (type 19)
+	// item: "x" (type 21)
+	// item: ":" (type 18)
+	// item: <integer>
+	// item: "\n" (type 19)
+	// item: <endvar>
+	// item: "\n" (type 19)
+	// item: <run>
+	// item: "\n" (type 19)
+	// item: "x" (type 21)
+	// item: "=" (type 3)
+	// item: "3" (type 1)
+	// item: "\n" (type 19)
+	// item: <endrun>
+	// item: EOF
+	//
+
 }
 
 func ExampleLexing2() {
@@ -54,24 +55,24 @@ func ExampleLexing2() {
     endrun`
 
 	printTokens(lex("test", inputStr))
-	/* Output:
-item: <var>
-item: "\n" (type 19)
-item: "this-boy" (type 21)
-item: ":" (type 18)
-item: <string>
-item: "\n" (type 19)
-item: <endvar>
-item: "\n" (type 19)
-item: <run>
-item: "\n" (type 19)
-item: "this-boy" (type 21)
-item: "=" (type 3)
-item: "hi there" (type 2)
-item: "\n" (type 19)
-item: <endrun>
-item: EOF
-	*/
+	// Output:
+	// item: <var>
+	// item: "\n" (type 19)
+	// item: "this-boy" (type 21)
+	// item: ":" (type 18)
+	// item: <string>
+	// item: "\n" (type 19)
+	// item: <endvar>
+	// item: "\n" (type 19)
+	// item: <run>
+	// item: "\n" (type 19)
+	// item: "this-boy" (type 21)
+	// item: "=" (type 3)
+	// item: "hi there" (type 2)
+	// item: "\n" (type 19)
+	// item: <endrun>
+	// item: EOF
+	//
 }
 
 func ExampleLexing3() {
@@ -117,141 +118,140 @@ func ExampleLexing3() {
 	endrun`
 
 	printTokens(lex("test", inputStr))
-	/* Output:
-item: <var>
-item: "\n" (type 19)
-item: "test" (type 21)
-item: ":" (type 18)
-item: <string>
-item: "\n" (type 19)
-item: "x" (type 21)
-item: ":" (type 18)
-item: <integer>
-item: "\n" (type 19)
-item: "y" (type 21)
-item: ":" (type 18)
-item: <integer>
-item: "\n" (type 19)
-item: "i" (type 21)
-item: ":" (type 18)
-item: <integer>
-item: "\n" (type 19)
-item: "doit" (type 21)
-item: ":" (type 18)
-item: <boolean>
-item: "\n" (type 19)
-item: "this-boy" (type 21)
-item: ":" (type 18)
-item: <boolean>
-item: "\n" (type 19)
-item: <endvar>
-item: "\n" (type 19)
-item: <run>
-item: "\n" (type 19)
-item: "this-boy" (type 21)
-item: "=" (type 3)
-item: <true>
-item: "\n" (type 19)
-item: "x" (type 21)
-item: "=" (type 3)
-item: "3" (type 1)
-item: "+" (type 12)
-item: "1000000" (type 1)
-item: "+" (type 12)
-item: "2" (type 1)
-item: "+" (type 12)
-item: "4" (type 1)
-item: "+" (type 12)
-item: "6" (type 1)
-item: "\n" (type 19)
-item: "x" (type 21)
-item: "=" (type 3)
-item: "3" (type 1)
-item: "\n" (type 19)
-item: "test" (type 21)
-item: "=" (type 3)
-item: "hello" (type 2)
-item: "\n" (type 19)
-item: "y" (type 21)
-item: "=" (type 3)
-item: "x" (type 21)
-item: "+" (type 12)
-item: "3" (type 1)
-item: "\n" (type 19)
-item: "print" (type 21)
-item: "(" (type 16)
-item: "y =  " (type 2)
-item: "+" (type 12)
-item: "str" (type 21)
-item: "(" (type 16)
-item: "x" (type 21)
-item: ")" (type 17)
-item: ")" (type 17)
-item: "\n" (type 19)
-item: <if>
-item: "y" (type 21)
-item: ">" (type 8)
-item: "3" (type 1)
-item: "\n" (type 19)
-item: "test" (type 21)
-item: "=" (type 3)
-item: "super" (type 2)
-item: "\n" (type 19)
-item: <elseif>
-item: "y" (type 21)
-item: "<" (type 7)
-item: "3" (type 1)
-item: "\n" (type 19)
-item: "test" (type 21)
-item: "=" (type 3)
-item: "wonder" (type 2)
-item: "\n" (type 19)
-item: <else>
-item: "\n" (type 19)
-item: "test" (type 21)
-item: "=" (type 3)
-item: "duper" (type 2)
-item: "\n" (type 19)
-item: <endif>
-item: "\n" (type 19)
-item: "print" (type 21)
-item: "(" (type 16)
-item: "test" (type 21)
-item: ")" (type 17)
-item: "\n" (type 19)
-item: "test" (type 21)
-item: "=" (type 3)
-item: "test" (type 21)
-item: "-" (type 13)
-item: "r" (type 2)
-item: "\n" (type 19)
-item: "print" (type 21)
-item: "(" (type 16)
-item: "test" (type 21)
-item: ")" (type 17)
-item: "\n" (type 19)
-item: <loop>
-item: "10" (type 1)
-item: "\n" (type 19)
-item: "i" (type 21)
-item: "=" (type 3)
-item: "i" (type 21)
-item: "+" (type 12)
-item: "1" (type 1)
-item: "\n" (type 19)
-item: <endloop>
-item: "\n" (type 19)
-item: "print" (type 21)
-item: "(" (type 16)
-item: "i = " (type 2)
-item: "+" (type 12)
-item: "str" (type 21)
-item: "(" (type 16)
-item: "i" (type 21)
-item: ")" (type 17)
-item: ")" (type 17)
-item: "\n" (type 19)
-item: <endrun>
-item: EOF
-*/
+	// Output:
+	// item: <var>
+	// item: "\n" (type 19)
+	// item: "test" (type 21)
+	// item: ":" (type 18)
+	// item: <string>
+	// item: "\n" (type 19)
+	// item: "x" (type 21)
+	// item: ":" (type 18)
+	// item: <integer>
+	// item: "\n" (type 19)
+	// item: "y" (type 21)
+	// item: ":" (type 18)
+	// item: <integer>
+	// item: "\n" (type 19)
+	// item: "i" (type 21)
+	// item: ":" (type 18)
+	// item: <integer>
+	// item: "\n" (type 19)
+	// item: "doit" (type 21)
+	// item: ":" (type 18)
+	// item: <boolean>
+	// item: "\n" (type 19)
+	// item: "this-boy" (type 21)
+	// item: ":" (type 18)
+	// item: <boolean>
+	// item: "\n" (type 19)
+	// item: <endvar>
+	// item: "\n" (type 19)
+	// item: <run>
+	// item: "\n" (type 19)
+	// item: "this-boy" (type 21)
+	// item: "=" (type 3)
+	// item: <true>
+	// item: "\n" (type 19)
+	// item: "x" (type 21)
+	// item: "=" (type 3)
+	// item: "3" (type 1)
+	// item: "+" (type 12)
+	// item: "1000000" (type 1)
+	// item: "+" (type 12)
+	// item: "2" (type 1)
+	// item: "+" (type 12)
+	// item: "4" (type 1)
+	// item: "+" (type 12)
+	// item: "6" (type 1)
+	// item: "\n" (type 19)
+	// item: "x" (type 21)
+	// item: "=" (type 3)
+	// item: "3" (type 1)
+	// item: "\n" (type 19)
+	// item: "test" (type 21)
+	// item: "=" (type 3)
+	// item: "hello" (type 2)
+	// item: "\n" (type 19)
+	// item: "y" (type 21)
+	// item: "=" (type 3)
+	// item: "x" (type 21)
+	// item: "+" (type 12)
+	// item: "3" (type 1)
+	// item: "\n" (type 19)
+	// item: <print>
+	// item: "(" (type 16)
+	// item: "y =  " (type 2)
+	// item: "+" (type 12)
+	// item: "str" (type 21)
+	// item: "(" (type 16)
+	// item: "x" (type 21)
+	// item: ")" (type 17)
+	// item: ")" (type 17)
+	// item: "\n" (type 19)
+	// item: <if>
+	// item: "y" (type 21)
+	// item: ">" (type 8)
+	// item: "3" (type 1)
+	// item: "\n" (type 19)
+	// item: "test" (type 21)
+	// item: "=" (type 3)
+	// item: "super" (type 2)
+	// item: "\n" (type 19)
+	// item: <elseif>
+	// item: "y" (type 21)
+	// item: "<" (type 7)
+	// item: "3" (type 1)
+	// item: "\n" (type 19)
+	// item: "test" (type 21)
+	// item: "=" (type 3)
+	// item: "wonder" (type 2)
+	// item: "\n" (type 19)
+	// item: <else>
+	// item: "\n" (type 19)
+	// item: "test" (type 21)
+	// item: "=" (type 3)
+	// item: "duper" (type 2)
+	// item: "\n" (type 19)
+	// item: <endif>
+	// item: "\n" (type 19)
+	// item: <print>
+	// item: "(" (type 16)
+	// item: "test" (type 21)
+	// item: ")" (type 17)
+	// item: "\n" (type 19)
+	// item: "test" (type 21)
+	// item: "=" (type 3)
+	// item: "test" (type 21)
+	// item: "-" (type 13)
+	// item: "r" (type 2)
+	// item: "\n" (type 19)
+	// item: <print>
+	// item: "(" (type 16)
+	// item: "test" (type 21)
+	// item: ")" (type 17)
+	// item: "\n" (type 19)
+	// item: <loop>
+	// item: "10" (type 1)
+	// item: "\n" (type 19)
+	// item: "i" (type 21)
+	// item: "=" (type 3)
+	// item: "i" (type 21)
+	// item: "+" (type 12)
+	// item: "1" (type 1)
+	// item: "\n" (type 19)
+	// item: <endloop>
+	// item: "\n" (type 19)
+	// item: <print>
+	// item: "(" (type 16)
+	// item: "i = " (type 2)
+	// item: "+" (type 12)
+	// item: "str" (type 21)
+	// item: "(" (type 16)
+	// item: "i" (type 21)
+	// item: ")" (type 17)
+	// item: ")" (type 17)
+	// item: "\n" (type 19)
+	// item: <endrun>
+	// item: EOF
 }

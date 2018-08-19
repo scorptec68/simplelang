@@ -21,9 +21,11 @@ Example:
 	          4 + 6
 	    x = 3
 		test = "hello"
+
+		3 secs ...
 		    
 		y = x + 3
-		print("y =  " + str(x))
+		print("y =  " + strInt(x))
 		
 		if y > 3
 			test = "super"
@@ -34,14 +36,14 @@ Example:
 		endif
 		
 		print(test)
-		test = test - "r"
+		test = test + "r"
 		print(test)
 		
 		loop times 10
 		    i = i + 1
 		endloop
 		
-		print("i = " + str(i))
+		print("i = " + strInt(i))
 	endrun
 	
 EBNF

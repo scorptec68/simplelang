@@ -485,7 +485,7 @@ func processKeyword(l *lexer) processResult {
 
 			// now look up word
 			word := l.itemString()
-			fmt.Printf("Look up %s\n", word)
+			// fmt.Printf("-> Look up %s\n", word)
 			if item, ok := keywords[word]; ok {
 				l.emit(item)
 				return resultMatch

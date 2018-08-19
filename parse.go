@@ -2,6 +2,7 @@ package simple_language
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 )
 
@@ -105,13 +106,13 @@ func (parser *Parser) nextItem() item {
 	} else {
 		parser.token[0] = parser.lex.nextItem()
 	}
-	fmt.Println("-> token: ", parser.token[parser.peekCount])
+	//fmt.Println("-> token: ", parser.token[parser.peekCount])
 	return parser.token[parser.peekCount]
 }
 
 func (parser *Parser) match(itemTyp itemType, context string) (err error) {
 	item := parser.nextItem()
-	fmt.Printf("-> matching on item: %v, got token: %v\n", itemTyp, item)
+	//fmt.Printf("-> matching on item: %v, got token: %v\n", itemTyp, item)
 	if item.typ != itemTyp {
 		return parser.Errorf("Expecting %v in %s but got \"%v\"", itemTyp, context, item.typ)
 	}
@@ -170,7 +171,16 @@ func PrintProgram(prog *Program, indent int) {
 
 func PrintVariables(vars *Variables, indent int) {
 	printfIndent(indent, "Variables\n")
-	fmt.Printf("%v\n", vars.values)
+
+	// sort for testing predictability
+	ids := make([]string, 0)
+	for id, _ := range vars.values {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		printfIndent(indent+1, "%s: %v\n", id, vars.values[id])
+	}
 }
 
 func PrintStatementList(stmtList []*Statement, indent int) {
@@ -279,13 +289,13 @@ func PrintStrAddTerm(i int, term *StringTerm, indent int) {
 	case StringTermId:
 		printfIndent(indent, "Identifier: %s\n", term.identifier)
 	case StringTermBracket:
-		printfIndent(indent, "Bracketed String Expression \n")
+		printfIndent(indent, "Bracketed String Expression\n")
 		PrintStringExpression(term.bracketedExprn, indent+1)
 	case StringTermStringedBoolExprn:
-		printfIndent(indent, "Stringify Bool Expression \n")
+		printfIndent(indent, "Stringify Bool Expression\n")
 		PrintBooleanExpression(term.stringedBoolExprn, indent+1)
 	case StringTermStringedIntExprn:
-		printfIndent(indent, "Stringify Int Expression \n")
+		printfIndent(indent, "Stringify Int Expression\n")
 		PrintIntExpression(term.stringedIntExprn, indent+1)
 	}
 }
