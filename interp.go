@@ -1,5 +1,9 @@
 package simple_language
 
+import (
+	"strconv"
+)
+
 type Interpreter struct {
 	variables *Variables
 }
@@ -66,6 +70,43 @@ func (interp *Interpreter) interpExpression(exprn *Expression) (val *Value, err 
 		return nil, err
 	}
 	return val, nil
+}
+
+func (interp *Interpreter) interpStringExpression(strExprn *StringExpression) (string, error) {
+	str := ""
+	for _, term := range strExprn.addTerms {
+		s, err := interp.interpStringTerm(term)
+		if err != nil {
+			return "", err
+		}
+		str += s
+	}
+	return str, nil
+}
+
+func (interp *Interpreter) interpStringTerm(strTerm *StringTerm) (string, error) {
+	switch strTerm.strTermType {
+	case StringTermValue:
+		return strTerm.strVal, nil
+	case StringTermBracket:
+		return interp.interpStringExpression(strTerm.bracketedExprn)
+	case StringTermId:
+		val := interp.variables.values[strTerm.identifier]
+		return val.stringVal, nil
+	case StringTermStringedBoolExprn:
+		b, err := interp.interpBoolExpression(strTerm.stringedBoolExprn)
+		if err != nil {
+			return "", err
+		}
+		return strconv.FormatBool(b), nil
+	case StringTermStringedIntExprn:
+		i, err := interp.interpIntExpression(strTerm.stringedIntExprn)
+		if err != nil {
+			return "", err
+		}
+		return strconv.Itoa(i), nil
+	}
+	return "", nil
 }
 
 func (interp *Interpreter) interpBoolExpression(boolExprn *BoolExpression) (val bool, err error) {
