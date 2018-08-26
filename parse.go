@@ -39,8 +39,7 @@ const (
 )
 
 const (
-	ExprnIdentifier ExpressionType = iota
-	ExprnInteger
+	ExprnInteger ExpressionType = iota
 	ExprnBoolean
 	ExprnString
 )
