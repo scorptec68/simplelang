@@ -30,6 +30,7 @@ const (
 	StmtIf
 	StmtAssignment
 	StmtPrint
+	StmtExit
 )
 
 const (
@@ -594,6 +595,10 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 		if err != nil {
 			return nil, err
 		}
+	case itemExit:
+		stmtType = StmtExit
+		// Note: there is nothing else with it to store
+
 	default:
 		return nil, parser.Errorf("Missing leading statement token. Got %v", item)
 	}

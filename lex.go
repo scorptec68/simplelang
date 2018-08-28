@@ -108,6 +108,7 @@ const (
 	itemEndVar    // endvar
 	itemRun       // run
 	itemEndRun    // endrun
+	itemExit      // exit
 	itemNone
 )
 
@@ -141,6 +142,7 @@ var keywords = map[string]itemType{
 	"true":    itemTrue,
 	"false":   itemFalse,
 	"times":   itemLoopTimes,
+	"exit":    itemExit,
 }
 
 var symbols = map[string]itemType{
