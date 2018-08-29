@@ -861,7 +861,7 @@ func (parser *Parser) parseStrExpression() (strExprn *StringExpression, err erro
 	// process 1st erm
 	strTerm, err := parser.parseStrTerm()
 	if err != nil {
-		return nil, parser.Errorf("Error parsing string term")
+		return nil, err
 	}
 	strExprn.addTerms = append(strExprn.addTerms, strTerm)
 
@@ -870,7 +870,7 @@ func (parser *Parser) parseStrExpression() (strExprn *StringExpression, err erro
 		parser.nextItem()
 		strTerm, err = parser.parseStrTerm()
 		if err != nil {
-			return nil, parser.Errorf("Error parsing string term")
+			return nil, err
 		}
 		strExprn.addTerms = append(strExprn.addTerms, strTerm)
 	}
@@ -982,6 +982,9 @@ func (parser *Parser) parseStrTerm() (strTerm *StringTerm, err error) {
 	item := parser.nextItem()
 	switch item.typ {
 	case itemIdentifier:
+		if parser.lookupType(item.val) != ValueString {
+			return nil, parser.Errorf("Not string variable in string expression")
+		}
 		strTerm.strTermType = StringTermId
 		strTerm.identifier = item.val
 	case itemStringLiteral:
@@ -1122,6 +1125,9 @@ func (parser *Parser) parseIntFactor() (intFactor *IntFactor, err error) {
 	item := parser.nextItem()
 	switch item.typ {
 	case itemIdentifier:
+		if parser.lookupType(item.val) != ValueInteger {
+			return nil, parser.Errorf("Not integer variable in integer expression")
+		}
 		intFactor.intFactorType = IntFactorId
 		intFactor.intIdentifier = item.val
 	case itemIntegerLiteral:

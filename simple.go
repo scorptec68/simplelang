@@ -24,14 +24,14 @@ func main() {
 	parser := NewParser(l)
 	program, err := parser.ParseProgram()
 	if err != nil {
-		fmt.Print(err)
+		fmt.Printf("Parsing error: %s\n", err)
 		os.Exit(1)
 	}
 
 	interp := new(Interpreter)
 	interp.InterpProgram(program)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Printf("Interpreting error: %s\n", err)
 		os.Exit(1)
 	}
 
