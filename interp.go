@@ -1,4 +1,4 @@
-package simple_language
+package simplelang
 
 import (
 	"fmt"
