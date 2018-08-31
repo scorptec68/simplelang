@@ -28,6 +28,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	//PrintProgram(program, 0)
+
 	interp := new(Interpreter)
 	interp.InterpProgram(program)
 	if err != nil {

@@ -319,7 +319,7 @@ func PrintBoolFactor(i int, factor *BoolFactor, indent int) {
 		PrintBooleanExpression(factor.bracketedExprn, indent+1)
 	case BoolFactorIntComparison:
 		printfIndent(indent, "Integer comparison\n")
-		printfIndent(indent, "%v", factor.intComparison.intComparator)
+		printfIndent(indent, "%v\n", factor.intComparison.intComparator)
 		PrintIntExpression(factor.intComparison.lhsIntExpression, indent+1)
 		PrintIntExpression(factor.intComparison.rhsIntExpression, indent+1)
 	}
@@ -1065,6 +1065,7 @@ func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 		match = true
 	}
 	if !match {
+		boolFactor.boolFactorType = BoolFactorIntComparison
 		boolFactor.intComparison, err = parser.parseIntComparison()
 		if err != nil {
 			return nil, err

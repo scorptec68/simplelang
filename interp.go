@@ -244,7 +244,7 @@ func (interp *Interpreter) interpIntComparison(intComparison *IntComparison) (bo
 	if err != nil {
 		return false, err
 	}
-	rhs, err := interp.interpIntExpression(intComparison.lhsIntExpression)
+	rhs, err := interp.interpIntExpression(intComparison.rhsIntExpression)
 	if err != nil {
 		return false, err
 	}
