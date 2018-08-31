@@ -29,6 +29,7 @@ func main() {
 	}
 
 	//PrintProgram(program, 0)
+	//os.Exit(0)
 
 	interp := new(Interpreter)
 	interp.InterpProgram(program)

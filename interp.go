@@ -35,11 +35,12 @@ func (interp *Interpreter) interpStatementList(stmtList []*Statement) (isExit bo
 
 func (interp *Interpreter) interpStatement(stmt *Statement) (isExit bool, err error) {
 	err = nil
+	isExit = false
 	switch stmt.stmtType {
 	case StmtAssignment:
 		err = interp.interpAssignmentStmt(stmt.assignmentStmt)
 	case StmtIf:
-		err = interp.interpIfStmt(stmt.ifStmt)
+		isExit, err = interp.interpIfStmt(stmt.ifStmt)
 	case StmtLoop:
 		err = interp.interpLoopStmt(stmt.loopStmt)
 	case StmtPrint:
@@ -47,31 +48,28 @@ func (interp *Interpreter) interpStatement(stmt *Statement) (isExit bool, err er
 	case StmtExit:
 		return true, nil
 	}
-	return false, err
+	return isExit, err
 }
 
-func (interp *Interpreter) interpIfStmt(ifStmt *IfStatement) (err error) {
+func (interp *Interpreter) interpIfStmt(ifStmt *IfStatement) (isExit bool, err error) {
 	val, err := interp.interpBoolExpression(ifStmt.boolExpression)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if val {
-		_, err = interp.interpStatementList(ifStmt.stmtList)
-		return err
+		return interp.interpStatementList(ifStmt.stmtList)
 	}
 	for _, elif := range ifStmt.elsifList {
 		val, err = interp.interpBoolExpression(elif.boolExpression)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if val {
-			_, err = interp.interpStatementList(elif.stmtList)
-			return err
+			return interp.interpStatementList(elif.stmtList)
 		}
 	}
 	// no matches - check out the else if there is one
-	_, err = interp.interpStatementList(ifStmt.elseStmtList)
-	return err
+	return interp.interpStatementList(ifStmt.elseStmtList)
 }
 
 func (interp *Interpreter) interpPrintStmt(printStmt *PrintStatement) (err error) {

@@ -182,6 +182,8 @@ func PrintOneStatement(stmt *Statement, indent int) {
 		PrintLoopStmt(stmt.loopStmt, indent+1)
 	case StmtPrint:
 		PrintPrintStmt(stmt.printStmt, indent+1)
+	case StmtExit:
+		printfIndent(indent, "Exit\n")
 	}
 }
 
@@ -579,6 +581,7 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 	case itemExit:
 		parser.nextItem()
 		stmtType = StmtExit
+		parser.match(itemNewLine, "exit")
 		// Note: there is nothing else with it to store
 
 	default:
