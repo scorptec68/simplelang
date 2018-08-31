@@ -110,11 +110,6 @@ func (parser *Parser) nextItem() item {
 	return parser.token
 }
 
-// backup backs the input stream up one token.
-func (parser *Parser) backup() {
-	parser.hold = true
-}
-
 // peek returns but does not consume the nextItem token.
 func (parser *Parser) peek() item {
 	if parser.hold {
@@ -440,12 +435,12 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 	vars = new(Variables)
 	vars.values = make(map[string]*Value)
 
-	item := parser.nextItem()
+	item := parser.peek()
 	if item.typ != itemVar {
 		// no variables to process
-		parser.backup()
 		return vars, nil
 	}
+	item = parser.nextItem()
 
 	err = parser.match(itemNewLine, "Var start")
 	if err != nil {
@@ -552,34 +547,37 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 	var loopStmt *LoopStatement
 	var printStmt *PrintStatement
 
-	item := parser.nextItem()
+	item := parser.peek()
 	switch item.typ {
 	case itemIdentifier:
 		stmtType = StmtAssignment
-		parser.backup()
 		assignStmt, err = parser.parseAssignment()
 		if err != nil {
 			return nil, err
 		}
 	case itemIf:
+		parser.nextItem()
 		stmtType = StmtIf
 		ifStmt, err = parser.parseIfStatement()
 		if err != nil {
 			return nil, err
 		}
 	case itemLoop:
+		parser.nextItem()
 		stmtType = StmtLoop
 		loopStmt, err = parser.parseLoopStatement()
 		if err != nil {
 			return nil, err
 		}
 	case itemPrint:
+		parser.nextItem()
 		stmtType = StmtPrint
 		printStmt, err = parser.parsePrintStatement()
 		if err != nil {
 			return nil, err
 		}
 	case itemExit:
+		parser.nextItem()
 		stmtType = StmtExit
 		// Note: there is nothing else with it to store
 
@@ -1023,25 +1021,29 @@ func (parser *Parser) parseStrTerm() (strTerm *StringTerm, err error) {
 func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 	boolFactor = new(BoolFactor)
 
-	item := parser.nextItem()
+	item := parser.peek()
 	match := false
 	switch item.typ {
 	case itemIdentifier:
 		// only match on boolean variables
 		if parser.lookupType(item.val) == ValueBoolean {
+			parser.nextItem()
 			boolFactor.boolFactorType = BoolFactorId
 			boolFactor.boolIdentifier = item.val
 			match = true
 		}
 	case itemTrue:
+		parser.nextItem()
 		boolFactor.boolFactorType = BoolFactorConst
 		boolFactor.boolConst = true
 		match = true
 	case itemFalse:
+		parser.nextItem()
 		boolFactor.boolFactorType = BoolFactorConst
 		boolFactor.boolConst = false
 		match = true
 	case itemNot:
+		parser.nextItem()
 		boolFactor.boolFactorType = BoolFactorNot
 		boolFactor.notBoolFactor, err = parser.parseBoolFactor()
 		if err != nil {
@@ -1049,6 +1051,7 @@ func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 		}
 		match = true
 	case itemLeftParen:
+		parser.nextItem()
 		boolFactor.boolFactorType = BoolFactorBracket
 		boolFactor.bracketedExprn, err = parser.parseBoolExpression()
 		if err != nil {
@@ -1062,7 +1065,6 @@ func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 		match = true
 	}
 	if !match {
-		parser.backup()
 		boolFactor.intComparison, err = parser.parseIntComparison()
 		if err != nil {
 			return nil, err
