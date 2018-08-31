@@ -92,61 +92,46 @@ type Variables struct {
 type Parser struct {
 	variables *Variables
 
-	lex       *lexer
-	token     [3]item // three-token lookahead for parser.
-	peekCount int
+	lex   *lexer
+	token item
+	hold  bool // don't get next but hold where we are
 }
 
 //-------------------------------------------------------------------------------
 
 // nextItem returns the nextItem token from lexer or saved from peeking.
 func (parser *Parser) nextItem() item {
-	if parser.peekCount > 0 {
-		parser.peekCount--
+	if parser.hold {
+		parser.hold = false
 	} else {
-		parser.token[0] = parser.lex.nextItem()
+		parser.token = parser.lex.nextItem()
 	}
-	//fmt.Println("-> token: ", parser.token[parser.peekCount])
-	return parser.token[parser.peekCount]
+	//fmt.Println("-> token: ", parser.token)
+	return parser.token
+}
+
+// backup backs the input stream up one token.
+func (parser *Parser) backup() {
+	parser.hold = true
+}
+
+// peek returns but does not consume the nextItem token.
+func (parser *Parser) peek() item {
+	if parser.hold {
+		return parser.token
+	}
+	parser.hold = true
+	parser.token = parser.lex.nextItem()
+	return parser.token
 }
 
 func (parser *Parser) match(itemTyp itemType, context string) (err error) {
 	item := parser.nextItem()
 	//fmt.Printf("-> matching on item: %v, got token: %v\n", itemTyp, item)
 	if item.typ != itemTyp {
-		return parser.Errorf("Expecting %v in %s but got \"%v\"", itemTyp, context, item.typ)
+		return parser.errorf("Expecting %v in %s but got \"%v\"", itemTyp, context, item.typ)
 	}
 	return nil
-}
-
-// backup backs the input stream up one token.
-func (parser *Parser) backup() {
-	parser.peekCount++
-}
-
-// backup2 backs the input stream up two tokens.
-// The zeroth token is already there.
-func (parser *Parser) backup2(t1 item) {
-	parser.token[1] = t1
-	parser.peekCount = 2
-}
-
-// backup3 backs the input stream up three tokens
-// The zeroth token is already there.
-func (parser *Parser) backup3(t2, t1 item) { // Reverse order: we're pushing back.
-	parser.token[1] = t1
-	parser.token[2] = t2
-	parser.peekCount = 3
-}
-
-// peek returns but does not consume the nextItem token.
-func (parser *Parser) peek() item {
-	if parser.peekCount > 0 {
-		return parser.token[parser.peekCount-1]
-	}
-	parser.peekCount = 1
-	parser.token[0] = parser.lex.nextItem()
-	return parser.token[0]
 }
 
 //-------------------------------------------------------------------------------
@@ -480,7 +465,7 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 			return vars, nil
 		case itemEOF:
 			// end of any input which is an error
-			err := parser.Errorf("Cannot find EndVar")
+			err := parser.errorf("Cannot find EndVar")
 			return nil, err
 		case itemIdentifier:
 			idStr := item.val
@@ -501,7 +486,7 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 				return nil, err
 			}
 		default:
-			return nil, parser.Errorf("Unexpected token: %s in variables section", item)
+			return nil, parser.errorf("Unexpected token: %s in variables section", item)
 		}
 	}
 }
@@ -509,7 +494,7 @@ func (parser *Parser) parseVariables() (vars *Variables, err error) {
 func (parser *Parser) parseValue() (value *Value, err error) {
 	item := parser.nextItem()
 	if !(item.typ == itemString || item.typ == itemBoolean || item.typ == itemInteger) {
-		err := parser.Errorf("Expecting a variable type")
+		err := parser.errorf("Expecting a variable type")
 		return nil, err
 	}
 	switch item.typ {
@@ -554,9 +539,8 @@ func (parser *Parser) parseStatementList() ([]*Statement, error) {
 	}
 }
 
-func (parser *Parser) Errorf(format string, a ...interface{}) error {
-	item := parser.token[0]
-	preamble := fmt.Sprintf("Error at line %d: ", item.line)
+func (parser *Parser) errorf(format string, a ...interface{}) error {
+	preamble := fmt.Sprintf("Error at line %d: ", parser.token.line)
 	return fmt.Errorf(preamble+format, a...)
 }
 
@@ -600,7 +584,7 @@ func (parser *Parser) parseStatement() (stmt *Statement, err error) {
 		// Note: there is nothing else with it to store
 
 	default:
-		return nil, parser.Errorf("Missing leading statement token. Got %v", item)
+		return nil, parser.errorf("Missing leading statement token. Got %v", item)
 	}
 
 	return &Statement{stmtType, assignStmt, ifStmt, loopStmt, printStmt}, err
@@ -727,7 +711,7 @@ func (parser *Parser) parseIfStatement() (ifStmt *IfStatement, err error) {
 			}
 			return ifStmt, nil
 		default:
-			return nil, parser.Errorf("Bad token in if statement")
+			return nil, parser.errorf("Bad token in if statement")
 		}
 	}
 
@@ -790,7 +774,7 @@ func (parser *Parser) parseAssignment() (assign *AssignmentStatement, err error)
 		assign.exprn.exprnType = ExprnString
 		assign.exprn.stringExpression = strExprn
 	default:
-		return nil, parser.Errorf("Assignment to undeclared variable: %s", idItem.val)
+		return nil, parser.errorf("Assignment to undeclared variable: %s", idItem.val)
 	}
 
 	err = parser.match(itemNewLine, "assignment")
@@ -835,7 +819,7 @@ func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err erro
 	// process 1st term
 	boolTerm, err := parser.parseBoolTerm()
 	if err != nil {
-		return nil, parser.Errorf("Error parsing boolean term")
+		return nil, err
 	}
 	boolExprn.boolOrTerms = append(boolExprn.boolOrTerms, boolTerm)
 
@@ -844,7 +828,7 @@ func (parser *Parser) parseBoolExpression() (boolExprn *BoolExpression, err erro
 		parser.nextItem()
 		boolTerm, err = parser.parseBoolTerm()
 		if err != nil {
-			return nil, parser.Errorf("Error parsing boolean term")
+			return nil, err
 		}
 		boolExprn.boolOrTerms = append(boolExprn.boolOrTerms, boolTerm)
 	}
@@ -884,7 +868,7 @@ func (parser *Parser) parseIntExpression() (intExprn *IntExpression, err error) 
 	// process 1st term
 	intTerm, err := parser.parseIntTerm()
 	if err != nil {
-		return nil, parser.Errorf("Error parsing integer term")
+		return nil, err
 	}
 	intExprn.plusTerms = append(intExprn.plusTerms, intTerm)
 
@@ -903,7 +887,7 @@ loop:
 		parser.nextItem()
 		intTerm, err := parser.parseIntTerm()
 		if err != nil {
-			return nil, parser.Errorf("Error parsing int term")
+			return nil, err
 		}
 		if usingPlus {
 			intExprn.plusTerms = append(intExprn.plusTerms, intTerm)
@@ -920,7 +904,7 @@ func (parser *Parser) parseIntTerm() (intTerm *IntTerm, err error) {
 	// process 1st factor
 	intFactor, err := parser.parseIntFactor()
 	if err != nil {
-		return nil, parser.Errorf("Error parsing integer factor")
+		return nil, err
 	}
 	intTerm.timesFactors = append(intTerm.timesFactors, intFactor)
 
@@ -939,7 +923,7 @@ loop:
 		parser.nextItem()
 		intFactor, err := parser.parseIntFactor()
 		if err != nil {
-			return nil, parser.Errorf("Error parsing int term")
+			return nil, err
 		}
 		if usingTimes {
 			intTerm.timesFactors = append(intTerm.timesFactors, intFactor)
@@ -957,7 +941,7 @@ func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
 	// process 1st factor
 	boolFactor, err := parser.parseBoolFactor()
 	if err != nil {
-		return nil, parser.Errorf("Error parsing boolean factor")
+		return nil, err
 	}
 	boolTerm.boolAndFactors = append(boolTerm.boolAndFactors, boolFactor)
 
@@ -966,7 +950,7 @@ func (parser *Parser) parseBoolTerm() (boolTerm *BoolTerm, err error) {
 		parser.nextItem()
 		boolFactor, err = parser.parseBoolFactor()
 		if err != nil {
-			return nil, parser.Errorf("Error parsing boolean term")
+			return nil, err
 		}
 		boolTerm.boolAndFactors = append(boolTerm.boolAndFactors, boolFactor)
 	}
@@ -983,7 +967,7 @@ func (parser *Parser) parseStrTerm() (strTerm *StringTerm, err error) {
 	switch item.typ {
 	case itemIdentifier:
 		if parser.lookupType(item.val) != ValueString {
-			return nil, parser.Errorf("Not string variable in string expression")
+			return nil, parser.errorf("Not string variable in string expression")
 		}
 		strTerm.strTermType = StringTermId
 		strTerm.identifier = item.val
@@ -994,7 +978,7 @@ func (parser *Parser) parseStrTerm() (strTerm *StringTerm, err error) {
 		strTerm.strTermType = StringTermBracket
 		strTerm.bracketedExprn, err = parser.parseStrExpression()
 		if err != nil {
-			return nil, parser.Errorf("Can not process bracketed expression")
+			return nil, parser.errorf("Can not process bracketed expression")
 		}
 		err = parser.match(itemRightParen, "Bracketed expression")
 		if err != nil {
@@ -1008,7 +992,7 @@ func (parser *Parser) parseStrTerm() (strTerm *StringTerm, err error) {
 		strTerm.strTermType = StringTermStringedBoolExprn
 		strTerm.stringedBoolExprn, err = parser.parseBoolExpression()
 		if err != nil {
-			return nil, parser.Errorf("Can not process stringed expression")
+			return nil, parser.errorf("Can not process stringed expression")
 		}
 		err = parser.match(itemRightParen, "Stringify expression")
 		if err != nil {
@@ -1022,14 +1006,14 @@ func (parser *Parser) parseStrTerm() (strTerm *StringTerm, err error) {
 		strTerm.strTermType = StringTermStringedIntExprn
 		strTerm.stringedIntExprn, err = parser.parseIntExpression()
 		if err != nil {
-			return nil, parser.Errorf("Can not process stringed expression")
+			return nil, parser.errorf("Can not process stringed expression")
 		}
 		err = parser.match(itemRightParen, "Stringify expression")
 		if err != nil {
 			return nil, err
 		}
 	default:
-		return nil, parser.Errorf("Invalid string term")
+		return nil, parser.errorf("Invalid string term")
 	}
 	return strTerm, nil
 }
@@ -1061,14 +1045,14 @@ func (parser *Parser) parseBoolFactor() (boolFactor *BoolFactor, err error) {
 		boolFactor.boolFactorType = BoolFactorNot
 		boolFactor.notBoolFactor, err = parser.parseBoolFactor()
 		if err != nil {
-			return nil, parser.Errorf("Not missing factor")
+			return nil, parser.errorf("Not missing factor")
 		}
 		match = true
 	case itemLeftParen:
 		boolFactor.boolFactorType = BoolFactorBracket
 		boolFactor.bracketedExprn, err = parser.parseBoolExpression()
 		if err != nil {
-			return nil, parser.Errorf("Can not process bracketed expression")
+			return nil, parser.errorf("Can not process bracketed expression")
 		}
 
 		err = parser.match(itemRightParen, "Bracketed expression")
@@ -1108,7 +1092,7 @@ func (parser *Parser) parseIntComparison() (intComp *IntComparison, err error) {
 	case itemEquals:
 		intComp.intComparator = IntCompEquals
 	default:
-		return nil, parser.Errorf("Bad operator for integer")
+		return nil, parser.errorf("Bad operator for integer")
 	}
 
 	intComp.rhsIntExpression, err = parser.parseIntExpression()
@@ -1126,7 +1110,7 @@ func (parser *Parser) parseIntFactor() (intFactor *IntFactor, err error) {
 	switch item.typ {
 	case itemIdentifier:
 		if parser.lookupType(item.val) != ValueInteger {
-			return nil, parser.Errorf("Not integer variable in integer expression")
+			return nil, parser.errorf("Not integer variable in integer expression")
 		}
 		intFactor.intFactorType = IntFactorId
 		intFactor.intIdentifier = item.val
@@ -1134,19 +1118,19 @@ func (parser *Parser) parseIntFactor() (intFactor *IntFactor, err error) {
 		intFactor.intFactorType = IntFactorConst
 		intFactor.intConst, err = strconv.Atoi(item.val)
 		if err != nil {
-			return nil, parser.Errorf("Invalid integer literal")
+			return nil, parser.errorf("Invalid integer literal")
 		}
 	case itemMinus:
 		intFactor.intFactorType = IntFactorMinus
 		intFactor.minusIntFactor, err = parser.parseIntFactor()
 		if err != nil {
-			return nil, parser.Errorf("Minus missing int factor")
+			return nil, parser.errorf("Minus missing int factor")
 		}
 	case itemLeftParen:
 		intFactor.intFactorType = IntFactorBracket
 		intFactor.bracketedExprn, err = parser.parseIntExpression()
 		if err != nil {
-			return nil, parser.Errorf("Can not process bracketed expression")
+			return nil, parser.errorf("Can not process bracketed expression")
 		}
 
 		err = parser.match(itemRightParen, "Bracketed expression")
@@ -1154,7 +1138,7 @@ func (parser *Parser) parseIntFactor() (intFactor *IntFactor, err error) {
 			return nil, err
 		}
 	default:
-		return nil, parser.Errorf("Invalid integer factor")
+		return nil, parser.errorf("Invalid integer factor")
 	}
 	return intFactor, nil
 }

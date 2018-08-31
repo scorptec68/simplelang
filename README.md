@@ -22,7 +22,7 @@ Example:
 	    x = 3
 		test = "hello"
 
-		3 secs ...
+		3 secs
 		    
 		y = x + 3
 		print("y =  " + strInt(x))
