@@ -1,0 +1,19 @@
+var
+  i: integer
+endvar
+run
+    loop 
+        if 0 <= i & i < 5
+	    print("small")
+	elseif 5 <= i & i < 10
+	    print("medium")
+	elseif 10 <= i & i <= 15
+	    print("large")
+        endif
+        if i = 15
+	    exit
+        endif
+        print(strInt(i))
+	i = i + 1
+    endloop
+endrun
