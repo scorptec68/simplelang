@@ -189,7 +189,20 @@ func ExampleParse1() {
 	//           [0]: term
 	//             And Factors
 	//               [0]: factor
-	//               Const factor: false
+	//               Integer comparison
+	//               Greater than >
+	//                 Integer Expression
+	//                 Plus Terms
+	//                   [0]: plus term
+	//                     Times Factors
+	//                       [0]: factor
+	//                       Id factor: y
+	//                 Integer Expression
+	//                 Plus Terms
+	//                   [0]: plus term
+	//                     Times Factors
+	//                       [0]: factor
+	//                       Const factor: 3
 	//       if stmts
 	//         StatementList
 	//           Statement (type code: 2)
@@ -207,7 +220,20 @@ func ExampleParse1() {
 	//             [0]: term
 	//               And Factors
 	//                 [0]: factor
-	//                 Const factor: false
+	//                 Integer comparison
+	//                 Less than <
+	//                   Integer Expression
+	//                   Plus Terms
+	//                     [0]: plus term
+	//                       Times Factors
+	//                         [0]: factor
+	//                         Id factor: y
+	//                   Integer Expression
+	//                   Plus Terms
+	//                     [0]: plus term
+	//                       Times Factors
+	//                         [0]: factor
+	//                         Const factor: 3
 	//         elsif stmts
 	//           StatementList
 	//             Statement (type code: 2)
